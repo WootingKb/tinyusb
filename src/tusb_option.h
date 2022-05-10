@@ -140,6 +140,7 @@
 
 // GigaDevice
 #define OPT_MCU_GD32VF103        1600 ///< GigaDevice GD32VF103
+#define OPT_MCU_GD32F303         1601 ///< GigaDevice GD32F30x
 
 // Broadcom
 #define OPT_MCU_BCM2711          1700 ///< Broadcom BCM2711
