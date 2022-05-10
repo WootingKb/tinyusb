@@ -242,6 +242,9 @@
   #define TUP_USBIP_DWC2
   #define TUP_DCD_ENDPOINT_MAX    4
 
+#elif TU_CHECK_MCU(OPT_MCU_GD32F303)
+  #define TUP_DCD_ENDPOINT_MAX  8
+
 //------------- Broadcom -------------//
 #elif TU_CHECK_MCU(OPT_MCU_BCM2711, OPT_MCU_BCM2835, OPT_MCU_BCM2837)
   #define TUP_USBIP_DWC2

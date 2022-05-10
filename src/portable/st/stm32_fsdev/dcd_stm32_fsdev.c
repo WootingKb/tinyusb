@@ -111,7 +111,8 @@
 
 #if CFG_TUD_ENABLED && \
       ( TU_CHECK_MCU(OPT_MCU_STM32F0, OPT_MCU_STM32F3, OPT_MCU_STM32L0, OPT_MCU_STM32L1, OPT_MCU_STM32G4, OPT_MCU_STM32WB) || \
-        (TU_CHECK_MCU(OPT_MCU_STM32F1) && defined(STM32F1_FSDEV)) \
+        (TU_CHECK_MCU(OPT_MCU_STM32F1) && defined(STM32F1_FSDEV)) || \
+        (TU_CHECK_MCU(OPT_MCU_GD32F303) && defined(GD32F3_FSDEV)) \
       )
 
 // In order to reduce the dependance on HAL, we undefine this.
@@ -322,6 +323,10 @@ void dcd_int_enable (uint8_t rhport)
   NVIC_EnableIRQ(USB_HP_CAN1_TX_IRQn);
   NVIC_EnableIRQ(USB_LP_CAN1_RX0_IRQn);
   NVIC_EnableIRQ(USBWakeUp_IRQn);
+#elif CFG_TUSB_MCU == OPT_MCU_GD32F303
+  NVIC_EnableIRQ(USBD_HP_CAN0_TX_IRQn);
+  NVIC_EnableIRQ(USBD_LP_CAN0_RX0_IRQn);
+  NVIC_EnableIRQ(USBD_WKUP_IRQn);
 
 #elif CFG_TUSB_MCU == OPT_MCU_STM32G4
   NVIC_EnableIRQ(USB_HP_IRQn);
@@ -368,6 +373,12 @@ void dcd_int_disable(uint8_t rhport)
   NVIC_DisableIRQ(USB_HP_CAN1_TX_IRQn);
   NVIC_DisableIRQ(USB_LP_CAN1_RX0_IRQn);
   NVIC_DisableIRQ(USBWakeUp_IRQn);
+
+#elif CFG_TUSB_MCU == OPT_MCU_GD32F303
+  NVIC_DisableIRQ(USBD_HP_CAN0_TX_IRQn);
+  NVIC_DisableIRQ(USBD_LP_CAN0_RX0_IRQn);
+  NVIC_DisableIRQ(USBD_WKUP_IRQn);
+
 
 #elif CFG_TUSB_MCU == OPT_MCU_STM32G4
   NVIC_DisableIRQ(USB_HP_IRQn);

@@ -137,6 +137,9 @@
 #elif CFG_TUSB_MCU == OPT_MCU_GD32VF103
   #include "gd32vf103.h"
 
+#elif CFG_TUSB_MCU == OPT_MCU_GD32F303
+  #include "gd32f30x.h"
+
 #elif CFG_TUSB_MCU == OPT_MCU_MM32F327X
   #include "mm32_device.h"
 
