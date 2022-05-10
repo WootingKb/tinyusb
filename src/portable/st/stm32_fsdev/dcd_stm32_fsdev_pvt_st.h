@@ -52,6 +52,15 @@
   // F1 names this differently from the rest
   #define USB_CNTR_LPMODE   USB_CNTR_LP_MODE
 
+#elif defined(GD32F3_FSDEV)
+  #include "gd32_fsdev_common.h"
+  #define PMA_LENGTH (512u)
+  // NO internal Pull-ups
+  //         *B, and *C:    2 x 16 bits/word
+
+  // F1 names this differently from the rest
+  #define USB_CNTR_LPMODE   USB_CNTR_LP_MODE
+
 #elif defined(STM32F302xB) || defined(STM32F302xC) || \
       defined(STM32F303xB) || defined(STM32F303xC) || \
       defined(STM32F373xC)
