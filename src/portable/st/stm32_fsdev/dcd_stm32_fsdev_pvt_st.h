@@ -52,7 +52,7 @@
   // F1 names this differently from the rest
   #define USB_CNTR_LPMODE   USB_CNTR_LP_MODE
 
-#elif defined(GD32F3_FSDEV)
+#elif CFG_TUSB_MCU == OPT_MCU_GD32F303
   #include "gd32_fsdev_common.h"
   #define PMA_LENGTH (512u)
   // NO internal Pull-ups
