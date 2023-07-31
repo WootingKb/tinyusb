@@ -459,7 +459,7 @@ static bool check_dwc2(dwc2_regs_t * dwc2)
 #endif
 
   // For some reasons: GD32VF103 snpsid and all hwcfg register are always zero (skip it)
-#if !TU_CHECK_MCU(OPT_MCU_GD32VF103)
+#if !TU_CHECK_MCU(OPT_MCU_GD32VF103, OPT_MCU_GD32F4)
   uint32_t const gsnpsid = dwc2->gsnpsid & GSNPSID_ID_MASK;
   TU_ASSERT(gsnpsid == DWC2_OTG_ID || gsnpsid == DWC2_FS_IOT_ID || gsnpsid == DWC2_HS_IOT_ID);
 #endif
