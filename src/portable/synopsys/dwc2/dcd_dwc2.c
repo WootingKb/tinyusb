@@ -38,8 +38,10 @@
   #include "dwc2_stm32.h"
 #elif TU_CHECK_MCU(OPT_MCU_ESP32S2, OPT_MCU_ESP32S3)
   #include "dwc2_esp32.h"
-#elif TU_CHECK_MCU(OPT_MCU_GD32VF103, OPT_MCU_GD32F4)
+#elif TU_CHECK_MCU(OPT_MCU_GD32VF103)
   #include "dwc2_gd32.h"
+#elif TU_CHECK_MCU(OPT_MCU_GD32F4)
+  #include "dwc2_gd32f.h"
 #elif TU_CHECK_MCU(OPT_MCU_BCM2711, OPT_MCU_BCM2835, OPT_MCU_BCM2837)
   #include "dwc2_bcm.h"
 #elif TU_CHECK_MCU(OPT_MCU_EFM32GG)
