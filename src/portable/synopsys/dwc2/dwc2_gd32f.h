@@ -28,146 +28,165 @@
 #define _DWC2_GD32F_H_
 
 #ifdef __cplusplus
- extern "C" {
+extern "C" {
 #endif
 
 // EP_MAX       : Max number of bi-directional endpoints including EP0
 // EP_FIFO_SIZE : Size of dedicated USB SRAM
 #if CFG_TUSB_MCU == OPT_MCU_GD32F4
-  #include "gd32f4xx.h"
-  #define EP_MAX_FS       4
-  #define EP_FIFO_SIZE_FS 1280U
-  #define EP_MAX_HS       6
-  #define EP_FIFO_SIZE_HS 4096U
-
+#include "gd32f4xx.h"
+#define EP_MAX_FS 4
+#define EP_FIFO_SIZE_FS 1280U
+#define EP_MAX_HS 6
+#define EP_FIFO_SIZE_HS 4096U
 
 #else
-  #error "Unsupported MCUs"
+#error "Unsupported MCUs"
 #endif
 
 // On GD32 we associate Port0 to OTG_FS, and Port1 to OTG_HS
 #if TUD_OPT_RHPORT == 0
-  #define DWC2_REG_BASE       USBFS_BASE
-  #define DWC2_EP_MAX         EP_MAX_FS
-  #define DWC2_EP_FIFO_SIZE   EP_FIFO_SIZE_FS
-  #define RHPORT_IRQn         USBFS_IRQn
+#define DWC2_REG_BASE USBFS_BASE
+#define DWC2_EP_MAX EP_MAX_FS
+#define DWC2_EP_FIFO_SIZE EP_FIFO_SIZE_FS
+#define RHPORT_IRQn USBFS_IRQn
 
 #else
-  #define DWC2_REG_BASE       USBHS_BASE
-  #define DWC2_EP_MAX         EP_MAX_HS
-  #define DWC2_EP_FIFO_SIZE   EP_FIFO_SIZE_HS
-  #define RHPORT_IRQn         USBHS_IRQn
+#define DWC2_REG_BASE USBHS_BASE
+#define DWC2_EP_MAX EP_MAX_HS
+#define DWC2_EP_FIFO_SIZE EP_FIFO_SIZE_HS
+#define RHPORT_IRQn USBHS_IRQn
 
 #endif
 
 extern uint32_t SystemCoreClock;
 
 TU_ATTR_ALWAYS_INLINE
-static inline void dwc2_dcd_int_enable(uint8_t rhport)
-{
-  (void) rhport;
+static inline void dwc2_dcd_int_enable(uint8_t rhport) {
+  (void)rhport;
   NVIC_EnableIRQ(RHPORT_IRQn);
+  // NVIC_EnableIRQ(USBHS_WKUP_IRQn);
 }
 
 TU_ATTR_ALWAYS_INLINE
-static inline void dwc2_dcd_int_disable (uint8_t rhport)
-{
-  (void) rhport;
+static inline void dwc2_dcd_int_disable(uint8_t rhport) {
+  (void)rhport;
   NVIC_DisableIRQ(RHPORT_IRQn);
+  // NVIC_DisableIRQ(USBHS_WKUP_IRQn);
 }
 
 TU_ATTR_ALWAYS_INLINE
-static inline void dwc2_remote_wakeup_delay(void)
-{
+static inline void dwc2_remote_wakeup_delay(void) {
   // try to delay for 1 ms
   uint32_t count = SystemCoreClock / 1000;
-  while ( count-- ) __NOP();
+  while (count--)
+    __NOP();
 }
 
 // MCU specific PHY init, called BEFORE core reset
-static inline void dwc2_phy_init(dwc2_regs_t * dwc2, uint8_t hs_phy_type)
-{
-  if ( hs_phy_type == HS_PHY_TYPE_NONE )
-  {
-    // Enable on-chip FS PHY
-    dwc2->stm32_gccfg |= STM32_GCCFG_PWRDWN;
-  }else
-  {
-    // Disable FS PHY
-    dwc2->stm32_gccfg &= ~STM32_GCCFG_PWRDWN;
+static inline void dwc2_phy_init(dwc2_regs_t *dwc2, uint8_t hs_phy_type) {
+  // Enable Internal PHY
+  dwc2->stm32_gccfg |= STM32_GCCFG_PWRDWN;
+  // Disable VBUS checking
+  dwc2->stm32_gccfg |= STM32_GCCFG_VBDEN;
 
-    // Enable on-chip HS PHY
-    if (hs_phy_type == HS_PHY_TYPE_UTMI || hs_phy_type == HS_PHY_TYPE_UTMI_ULPI)
-    {
-#ifdef USB_HS_PHYC
-      // Enable UTMI HS PHY
-      dwc2->stm32_gccfg |= STM32_GCCFG_PHYHSEN;
+  dwc2->gusbcfg |= GUSBCFG_PHYSEL;
 
-      // Enable LDO
-      USB_HS_PHYC->USB_HS_PHYC_LDO |= USB_HS_PHYC_LDO_ENABLE;
+  //   if (hs_phy_type == HS_PHY_TYPE_NONE) {
+  //     // Enable on-chip FS PHY
+  //     dwc2->stm32_gccfg |= STM32_GCCFG_PWRDWN;
+  //     // dwc2->gusbcfg |= GUSBCFG_PHYSEL;
+  //   } else {
+  //     // Disable FS PHY
+  //     dwc2->stm32_gccfg &= ~STM32_GCCFG_PWRDWN;
+  //     // dwc2->gusbcfg &= ~GUSBCFG_PHYSEL;
 
-      // Wait until LDO ready
-      while ( 0 == (USB_HS_PHYC->USB_HS_PHYC_LDO & USB_HS_PHYC_LDO_STATUS) ) {}
+  //     // Enable on-chip HS PHY
+  //     if (hs_phy_type == HS_PHY_TYPE_UTMI ||
+  //         hs_phy_type == HS_PHY_TYPE_UTMI_ULPI) {
+  // #ifdef USB_HS_PHYC
+  //       // Enable UTMI HS PHY
+  //       dwc2->stm32_gccfg |= STM32_GCCFG_PHYHSEN;
 
-      uint32_t phyc_pll = 0;
+  //       // Enable LDO
+  //       USB_HS_PHYC->USB_HS_PHYC_LDO |= USB_HS_PHYC_LDO_ENABLE;
 
-      // TODO Try to get HSE_VALUE from registers instead of depending CFLAGS
-      switch ( HSE_VALUE )
-      {
-        case 12000000: phyc_pll = USB_HS_PHYC_PLL1_PLLSEL_12MHZ   ; break;
-        case 12500000: phyc_pll = USB_HS_PHYC_PLL1_PLLSEL_12_5MHZ ; break;
-        case 16000000: phyc_pll = USB_HS_PHYC_PLL1_PLLSEL_16MHZ   ; break;
-        case 24000000: phyc_pll = USB_HS_PHYC_PLL1_PLLSEL_24MHZ   ; break;
-        case 25000000: phyc_pll = USB_HS_PHYC_PLL1_PLLSEL_25MHZ   ; break;
-        case 32000000: phyc_pll = USB_HS_PHYC_PLL1_PLLSEL_Msk     ; break; // Value not defined in header
-        default:
-          TU_ASSERT(false, );
-      }
-      USB_HS_PHYC->USB_HS_PHYC_PLL = phyc_pll;
+  //       // Wait until LDO ready
+  //       while (0 == (USB_HS_PHYC->USB_HS_PHYC_LDO & USB_HS_PHYC_LDO_STATUS))
+  //       {
+  //       }
 
-      // Control the tuning interface of the High Speed PHY
-      // Use magic value (USB_HS_PHYC_TUNE_VALUE) from ST driver for F7
-      USB_HS_PHYC->USB_HS_PHYC_TUNE |= 0x00000F13U;
+  //       uint32_t phyc_pll = 0;
 
-      // Enable PLL internal PHY
-      USB_HS_PHYC->USB_HS_PHYC_PLL |= USB_HS_PHYC_PLL_PLLEN;
-#endif
-    }
-  }
+  //       // TODO Try to get HSE_VALUE from registers instead of depending
+  //       CFLAGS switch (HSE_VALUE) { case 12000000:
+  //         phyc_pll = USB_HS_PHYC_PLL1_PLLSEL_12MHZ;
+  //         break;
+  //       case 12500000:
+  //         phyc_pll = USB_HS_PHYC_PLL1_PLLSEL_12_5MHZ;
+  //         break;
+  //       case 16000000:
+  //         phyc_pll = USB_HS_PHYC_PLL1_PLLSEL_16MHZ;
+  //         break;
+  //       case 24000000:
+  //         phyc_pll = USB_HS_PHYC_PLL1_PLLSEL_24MHZ;
+  //         break;
+  //       case 25000000:
+  //         phyc_pll = USB_HS_PHYC_PLL1_PLLSEL_25MHZ;
+  //         break;
+  //       case 32000000:
+  //         phyc_pll = USB_HS_PHYC_PLL1_PLLSEL_Msk;
+  //         break; // Value not defined in header
+  //       default:
+  //         TU_ASSERT(false, );
+  //       }
+  //       USB_HS_PHYC->USB_HS_PHYC_PLL = phyc_pll;
+
+  //       // Control the tuning interface of the High Speed PHY
+  //       // Use magic value (USB_HS_PHYC_TUNE_VALUE) from ST driver for F7
+  //       USB_HS_PHYC->USB_HS_PHYC_TUNE |= 0x00000F13U;
+
+  //       // Enable PLL internal PHY
+  //       USB_HS_PHYC->USB_HS_PHYC_PLL |= USB_HS_PHYC_PLL_PLLEN;
+  // #endif
+  //     }
+  //   }
 }
 
 // MCU specific PHY update, it is called AFTER init() and core reset
-static inline void dwc2_phy_update(dwc2_regs_t * dwc2, uint8_t hs_phy_type)
-{
+static inline void dwc2_phy_update(dwc2_regs_t *dwc2, uint8_t hs_phy_type) {
   // used to set turnaround time for fullspeed, nothing to do in highspeed mode
-  if ( hs_phy_type == HS_PHY_TYPE_NONE )
-  {
-    // Turnaround timeout depends on the AHB clock dictated by STM32 Reference Manual
-    uint32_t turnaround;
+  // if (hs_phy_type == HS_PHY_TYPE_NONE) {
+  //   // Turnaround timeout depends on the AHB clock dictated by STM32
+  //   Reference
+  //   // Manual
+  //   uint32_t turnaround;
 
-    if ( SystemCoreClock >= 32000000u )
-      turnaround = 0x6u;
-    else if ( SystemCoreClock >= 27500000u )
-      turnaround = 0x7u;
-    else if ( SystemCoreClock >= 24000000u )
-      turnaround = 0x8u;
-    else if ( SystemCoreClock >= 21800000u )
-      turnaround = 0x9u;
-    else if ( SystemCoreClock >= 20000000u )
-      turnaround = 0xAu;
-    else if ( SystemCoreClock >= 18500000u )
-      turnaround = 0xBu;
-    else if ( SystemCoreClock >= 17200000u )
-      turnaround = 0xCu;
-    else if ( SystemCoreClock >= 16000000u )
-      turnaround = 0xDu;
-    else if ( SystemCoreClock >= 15000000u )
-      turnaround = 0xEu;
-    else
-      turnaround = 0xFu;
+  //   if (SystemCoreClock >= 32000000u)
+  //     turnaround = 0x6u;
+  //   else if (SystemCoreClock >= 27500000u)
+  //     turnaround = 0x7u;
+  //   else if (SystemCoreClock >= 24000000u)
+  //     turnaround = 0x8u;
+  //   else if (SystemCoreClock >= 21800000u)
+  //     turnaround = 0x9u;
+  //   else if (SystemCoreClock >= 200000000u)
+  //     turnaround = 0xAu;
+  //   else if (SystemCoreClock >= 18500000u)
+  //     turnaround = 0xBu;
+  //   else if (SystemCoreClock >= 17200000u)
+  //     turnaround = 0xCu;
+  //   else if (SystemCoreClock >= 16000000u)
+  //     turnaround = 0xDu;
+  //   else if (SystemCoreClock >= 15000000u)
+  //     turnaround = 0xEu;
+  //   else
+  //     turnaround = 0xFu;
 
-    dwc2->gusbcfg = (dwc2->gusbcfg & ~GUSBCFG_TRDT_Msk) | (turnaround << GUSBCFG_TRDT_Pos);
-  }
+  //   dwc2->gusbcfg =
+  //       (dwc2->gusbcfg & ~GUSBCFG_TRDT_Msk) | (turnaround <<
+  //       GUSBCFG_TRDT_Pos);
+  // }
 }
 
 #ifdef __cplusplus

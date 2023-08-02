@@ -247,7 +247,8 @@
 
 #elif TU_CHECK_MCU(OPT_MCU_GD32F4)
   #define TUP_USBIP_DWC2
-  #define TUP_DCD_ENDPOINT_MAX  4
+  // USBHS has max 6, is max 4 for USBFS
+  #define TUP_DCD_ENDPOINT_MAX  6
 //------------- Broadcom -------------//
 #elif TU_CHECK_MCU(OPT_MCU_BCM2711, OPT_MCU_BCM2835, OPT_MCU_BCM2837)
   #define TUP_USBIP_DWC2
