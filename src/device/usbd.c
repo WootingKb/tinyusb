@@ -502,9 +502,8 @@ void tud_task_ext(uint32_t timeout_ms, bool in_isr)
     {
       case DCD_EVENT_BUS_RESET:
         TU_LOG_USBD(": %s Speed\r\n", tu_str_speed[event.bus_reset.speed]);
-        usbd_reset(event.rhport);
         _usbd_dev.speed = event.bus_reset.speed;
-      break;
+        TU_ATTR_FALLTHROUGH;
 
       case DCD_EVENT_UNPLUGGED:
         TU_LOG_USBD("\r\n");
@@ -1090,6 +1089,7 @@ TU_ATTR_FAST_FUNC void dcd_event_handler(dcd_event_t const * event, bool in_isr)
 {
   switch (event->event_id)
   {
+    case DCD_EVENT_BUS_RESET:
     case DCD_EVENT_UNPLUGGED:
       _usbd_dev.connected  = 0;
       _usbd_dev.addressed  = 0;
