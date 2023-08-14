@@ -85,72 +85,20 @@ static inline void dwc2_remote_wakeup_delay(void) {
 
 // MCU specific PHY init, called BEFORE core reset
 static inline void dwc2_phy_init(dwc2_regs_t *dwc2, uint8_t hs_phy_type) {
-  // Enable Internal PHY
-  dwc2->stm32_gccfg |= STM32_GCCFG_PWRDWN;
-  // Disable VBUS checking
-  dwc2->stm32_gccfg |= STM32_GCCFG_VBDEN;
 
-  dwc2->gusbcfg |= GUSBCFG_PHYSEL;
+  if (hs_phy_type == HS_PHY_TYPE_NONE) {
+    // Enable on-chip FS PHY
+    dwc2->stm32_gccfg |= STM32_GCCFG_PWRDWN;
+    dwc2->gusbcfg |= GUSBCFG_PHYSEL;
+    // TODO: Put under a define?
+    // Disable VBUS sensing
+    dwc2->stm32_gccfg |= STM32_GCCFG_VBDEN;
 
-  //   if (hs_phy_type == HS_PHY_TYPE_NONE) {
-  //     // Enable on-chip FS PHY
-  //     dwc2->stm32_gccfg |= STM32_GCCFG_PWRDWN;
-  //     // dwc2->gusbcfg |= GUSBCFG_PHYSEL;
-  //   } else {
-  //     // Disable FS PHY
-  //     dwc2->stm32_gccfg &= ~STM32_GCCFG_PWRDWN;
-  //     // dwc2->gusbcfg &= ~GUSBCFG_PHYSEL;
-
-  //     // Enable on-chip HS PHY
-  //     if (hs_phy_type == HS_PHY_TYPE_UTMI ||
-  //         hs_phy_type == HS_PHY_TYPE_UTMI_ULPI) {
-  // #ifdef USB_HS_PHYC
-  //       // Enable UTMI HS PHY
-  //       dwc2->stm32_gccfg |= STM32_GCCFG_PHYHSEN;
-
-  //       // Enable LDO
-  //       USB_HS_PHYC->USB_HS_PHYC_LDO |= USB_HS_PHYC_LDO_ENABLE;
-
-  //       // Wait until LDO ready
-  //       while (0 == (USB_HS_PHYC->USB_HS_PHYC_LDO & USB_HS_PHYC_LDO_STATUS))
-  //       {
-  //       }
-
-  //       uint32_t phyc_pll = 0;
-
-  //       // TODO Try to get HSE_VALUE from registers instead of depending
-  //       CFLAGS switch (HSE_VALUE) { case 12000000:
-  //         phyc_pll = USB_HS_PHYC_PLL1_PLLSEL_12MHZ;
-  //         break;
-  //       case 12500000:
-  //         phyc_pll = USB_HS_PHYC_PLL1_PLLSEL_12_5MHZ;
-  //         break;
-  //       case 16000000:
-  //         phyc_pll = USB_HS_PHYC_PLL1_PLLSEL_16MHZ;
-  //         break;
-  //       case 24000000:
-  //         phyc_pll = USB_HS_PHYC_PLL1_PLLSEL_24MHZ;
-  //         break;
-  //       case 25000000:
-  //         phyc_pll = USB_HS_PHYC_PLL1_PLLSEL_25MHZ;
-  //         break;
-  //       case 32000000:
-  //         phyc_pll = USB_HS_PHYC_PLL1_PLLSEL_Msk;
-  //         break; // Value not defined in header
-  //       default:
-  //         TU_ASSERT(false, );
-  //       }
-  //       USB_HS_PHYC->USB_HS_PHYC_PLL = phyc_pll;
-
-  //       // Control the tuning interface of the High Speed PHY
-  //       // Use magic value (USB_HS_PHYC_TUNE_VALUE) from ST driver for F7
-  //       USB_HS_PHYC->USB_HS_PHYC_TUNE |= 0x00000F13U;
-
-  //       // Enable PLL internal PHY
-  //       USB_HS_PHYC->USB_HS_PHYC_PLL |= USB_HS_PHYC_PLL_PLLEN;
-  // #endif
-  //     }
-  //   }
+  } else {
+    // Disable FS PHY
+    dwc2->stm32_gccfg &= ~STM32_GCCFG_PWRDWN;
+    dwc2->gusbcfg &= ~GUSBCFG_PHYSEL;
+  }
 }
 
 // MCU specific PHY update, it is called AFTER init() and core reset
