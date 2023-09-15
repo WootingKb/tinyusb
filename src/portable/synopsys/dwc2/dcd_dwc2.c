@@ -357,10 +357,25 @@ static void reset_core(dwc2_regs_t * dwc2)
   // wait for device mode ?
 }
 
+static uint32_t get_hs_phy_type(dwc2_regs_t * dwc2) {
+  #ifdef OPT_MCU_GD32F4
+
+  #ifdef USE_ULPI_PHY
+    return HS_PHY_TYPE_ULPI;
+  #elif defined(USE_EMBEDDED_PHY)
+    // TODO: Is this correct?
+    return HS_PHY_TYPE_NONE;
+  #endif
+
+  #else
+  return dwc2->ghwcfg2_bm.hs_phy_type;
+  #endif
+}
+
 static bool phy_hs_supported(dwc2_regs_t * dwc2)
 {
   // note: esp32 incorrect report its hs_phy_type as utmi
-  return TUD_OPT_HIGH_SPEED && dwc2->ghwcfg2_bm.hs_phy_type != HS_PHY_TYPE_NONE;
+  return TUD_OPT_HIGH_SPEED && get_hs_phy_type(dwc2) != HS_PHY_TYPE_NONE;
 }
 
 static void phy_fs_init(dwc2_regs_t * dwc2)
@@ -395,7 +410,7 @@ static void phy_hs_init(dwc2_regs_t * dwc2)
   // De-select FS PHY
   gusbcfg &= ~GUSBCFG_PHYSEL;
 
-  if (dwc2->ghwcfg2_bm.hs_phy_type == HS_PHY_TYPE_ULPI)
+  if (get_hs_phy_type(dwc2) == HS_PHY_TYPE_ULPI)
   {
     TU_LOG(DWC2_DEBUG, "Highspeed ULPI PHY init\r\n");
 
@@ -425,7 +440,7 @@ static void phy_hs_init(dwc2_regs_t * dwc2)
   dwc2->gusbcfg = gusbcfg;
 
   // mcu specific phy init
-  dwc2_phy_init(dwc2, dwc2->ghwcfg2_bm.hs_phy_type);
+  dwc2_phy_init(dwc2, get_hs_phy_type(dwc2));
 
   // Reset core after selecting PHY
   reset_core(dwc2);
@@ -438,7 +453,7 @@ static void phy_hs_init(dwc2_regs_t * dwc2)
   dwc2->gusbcfg = gusbcfg;
 
   // MCU specific PHY update post reset
-  dwc2_phy_update(dwc2, dwc2->ghwcfg2_bm.hs_phy_type);
+  dwc2_phy_update(dwc2, get_hs_phy_type(dwc2));
 
   // Set max speed
   uint32_t dcfg = dwc2->dcfg;
@@ -447,7 +462,7 @@ static void phy_hs_init(dwc2_regs_t * dwc2)
 
   // XCVRDLY: transceiver delay between xcvr_sel and txvalid during device chirp is required
   // when using with some PHYs such as USB334x (USB3341, USB3343, USB3346, USB3347)
-  if (dwc2->ghwcfg2_bm.hs_phy_type == HS_PHY_TYPE_ULPI) dcfg |= DCFG_XCVRDLY;
+  if (get_hs_phy_type(dwc2)== HS_PHY_TYPE_ULPI) dcfg |= DCFG_XCVRDLY;
 
   dwc2->dcfg = dcfg;
 }
