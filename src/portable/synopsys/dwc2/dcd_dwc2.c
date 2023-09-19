@@ -449,7 +449,11 @@ static void phy_hs_init(dwc2_regs_t * dwc2)
   // - 9 if using 8-bit PHY interface
   // - 5 if using 16-bit PHY interface
   gusbcfg &= ~GUSBCFG_TRDT_Msk;
+  #ifdef USE_ULPI_PHY
+  gusbcfg |= (9u) << GUSBCFG_TRDT_Pos;
+  #else
   gusbcfg |= (dwc2->ghwcfg4_bm.utmi_phy_data_width ? 5u : 9u) << GUSBCFG_TRDT_Pos;
+  #endif
   dwc2->gusbcfg = gusbcfg;
 
   // MCU specific PHY update post reset
