@@ -62,7 +62,7 @@ uint8_t tud_hid_n_interface_protocol(uint8_t instance);
 uint8_t tud_hid_n_get_protocol(uint8_t instance);
 
 // Send report to host
-bool tud_hid_n_report(uint8_t instance, uint8_t report_id, void const* report, uint8_t len);
+bool tud_hid_n_report(uint8_t instance, uint8_t report_id, void const* report, uint16_t len);
 
 // KEYBOARD: convenient helper to send keyboard report if application
 // use template layout report as defined by hid_keyboard_report_t
