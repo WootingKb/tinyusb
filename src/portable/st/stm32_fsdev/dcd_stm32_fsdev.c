@@ -340,6 +340,8 @@ void dcd_int_enable (uint8_t rhport)
 #else
   #error Unknown arch in USB driver
 #endif
+
+  dcd_int_handler(rhport);
 }
 
 // Disable device interrupt
@@ -392,6 +394,9 @@ void dcd_int_disable(uint8_t rhport)
 #else
   #error Unknown arch in USB driver
 #endif
+
+  __DSB();
+  __ISB();
 
   // CMSIS has a membar after disabling interrupts
 }
@@ -1162,4 +1167,3 @@ static bool dcd_read_packet_memory_ff(tu_fifo_t * ff, uint16_t src, uint16_t wNB
 #endif
 
 #endif
-
