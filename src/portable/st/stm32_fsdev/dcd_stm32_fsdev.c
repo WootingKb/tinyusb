@@ -340,8 +340,6 @@ void dcd_int_enable (uint8_t rhport)
 #else
   #error Unknown arch in USB driver
 #endif
-
-  dcd_int_handler(rhport);
 }
 
 // Disable device interrupt
@@ -395,6 +393,7 @@ void dcd_int_disable(uint8_t rhport)
   #error Unknown arch in USB driver
 #endif
 
+  // Member here forces write to RAM before allowing ISR to execute
   __DSB();
   __ISB();
 

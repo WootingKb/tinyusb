@@ -1162,6 +1162,9 @@ void usbd_int_set(bool enabled)
   if (enabled)
   {
     dcd_int_enable(_usbd_rhport);
+
+    // Trigger USB interrupt handling in the case one was missed when temporary disabled
+    dcd_int_handler(_usbd_rhport);
   }else
   {
     dcd_int_disable(_usbd_rhport);
