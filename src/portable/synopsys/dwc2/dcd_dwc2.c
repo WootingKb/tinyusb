@@ -387,17 +387,19 @@ static void reset_core(dwc2_regs_t * dwc2)
 }
 
 static uint32_t get_hs_phy_type(dwc2_regs_t * dwc2) {
-  #ifdef OPT_MCU_GD32F4
+  #if TU_CHECK_MCU(OPT_MCU_GD32F4)
 
-  #ifdef USE_ULPI_PHY
-    return HS_PHY_TYPE_ULPI;
-  #elif defined(USE_EMBEDDED_PHY)
-    // TODO: Is this correct?
-    return HS_PHY_TYPE_NONE;
-  #endif
+    #if defined(USE_ULPI_PHY)
+      return HS_PHY_TYPE_ULPI;
+    #elif defined(USE_EMBEDDED_PHY)
+      // TODO: Is this correct?
+      return HS_PHY_TYPE_NONE;
+    #else
+      #error "Unsupported PHY option"
+    #endif
 
   #else
-  return dwc2->ghwcfg2_bm.hs_phy_type;
+    return dwc2->ghwcfg2_bm.hs_phy_type;
   #endif
 }
 
