@@ -681,8 +681,8 @@ bool dcd_edpt_open (uint8_t rhport, tusb_desc_endpoint_t const * desc_edpt)
                                   (desc_edpt->bmAttributes.xfer != TUSB_XFER_ISOCHRONOUS ? DOEPCTL_SD0PID_SEVNFRM : 0) |
                                   (xfer->max_size << DOEPCTL_MPSIZ_Pos);
 
-    // Flush trasnmit FIFOs for the IN endpoints
-    dcd_flush_tx_endpoint(dwc2, epnum);
+    // Flush needed for receiving endpoints???
+//    dcd_flush_rx_endpoint(dwc2);
 
     dwc2->daintmsk |= TU_BIT(DAINTMSK_OEPM_Pos + epnum);
   }
@@ -725,6 +725,9 @@ bool dcd_edpt_open (uint8_t rhport, tusb_desc_endpoint_t const * desc_edpt)
                                  (desc_edpt->bmAttributes.xfer << DIEPCTL_EPTYP_Pos) |
                                  (desc_edpt->bmAttributes.xfer != TUSB_XFER_ISOCHRONOUS ? DIEPCTL_SD0PID_SEVNFRM : 0) |
                                  (xfer->max_size << DIEPCTL_MPSIZ_Pos);
+
+    // Flush trasnmit FIFOs for the IN endpoints
+    dcd_flush_tx_endpoint(dwc2, epnum);
 
     dwc2->daintmsk |= (1 << (DAINTMSK_IEPM_Pos + epnum));
   }
