@@ -98,18 +98,18 @@ static bool     _out_ep_closed;                   // Flag to check if RX FIFO si
 // Flush the TX-FIFO and wait until we have confirmed it cleared
 static void dcd_flush_tx_endpoint(dwc2_regs_t * dwc2, uint8_t epnum)
 {
-    dwc2->grstctl |= (epnum << GRSTCTL_TXFNUM_Pos);
-    dwc2->grstctl |= GRSTCTL_TXFFLSH;
+  dwc2->grstctl |= GRSTCTL_TXFNUM_Msk & (epnum << GRSTCTL_TXFNUM_Pos);
+  dwc2->grstctl |= GRSTCTL_TXFFLSH;
 
-    while (0 != (dwc2->grstctl & GRSTCTL_TXFFLSH_Msk)) { ; }
+  while (0 != (dwc2->grstctl & GRSTCTL_TXFFLSH_Msk)) { ; }
 }
 
 // Flush the RX-FIFO and wait until we have confirmed it cleared
 static void dcd_flush_rx_endpoint(dwc2_regs_t * dwc2)
 {
-    dwc2->grstctl |= GRSTCTL_RXFFLSH;
+  dwc2->grstctl |= GRSTCTL_RXFFLSH;
 
-    while (0 != (dwc2->grstctl & GRSTCTL_RXFFLSH_Msk)) { ; }
+  while (0 != (dwc2->grstctl & GRSTCTL_RXFFLSH_Msk)) { ; }
 }
 
 // Calculate the RX FIFO size according to recommendations from reference manual
@@ -145,7 +145,7 @@ static void bus_reset(uint8_t rhport)
   // Flush receiving FIFO for all OUT endpoints
 //  dcd_flush_rx_endpoint(dwc2);
 
-  // Flush trasnmit FIFOs for all IN endpoints
+  // Flush transmit FIFOs for all IN endpoints
   dcd_flush_tx_endpoint(dwc2, 0x10U);
 
   tu_memclr(xfer_status, sizeof(xfer_status));
@@ -382,7 +382,7 @@ static void reset_core(dwc2_regs_t * dwc2)
   // Flush receiving FIFO for all OUT endpoints
   dcd_flush_rx_endpoint(dwc2);
 
-  // Flush trasnmit FIFOs for all IN endpoints
+  // Flush transmit FIFOs for all IN endpoints
   dcd_flush_tx_endpoint(dwc2, 0x10U);
 }
 
@@ -681,7 +681,8 @@ bool dcd_edpt_open (uint8_t rhport, tusb_desc_endpoint_t const * desc_edpt)
                                   (desc_edpt->bmAttributes.xfer != TUSB_XFER_ISOCHRONOUS ? DOEPCTL_SD0PID_SEVNFRM : 0) |
                                   (xfer->max_size << DOEPCTL_MPSIZ_Pos);
 
-    // Flush needed for receiving endpoints???
+    // Flush receiving FIFO for all OUT endpoints
+    // ToDo: Is that needed???
 //    dcd_flush_rx_endpoint(dwc2);
 
     dwc2->daintmsk |= TU_BIT(DAINTMSK_OEPM_Pos + epnum);
@@ -726,7 +727,7 @@ bool dcd_edpt_open (uint8_t rhport, tusb_desc_endpoint_t const * desc_edpt)
                                  (desc_edpt->bmAttributes.xfer != TUSB_XFER_ISOCHRONOUS ? DIEPCTL_SD0PID_SEVNFRM : 0) |
                                  (xfer->max_size << DIEPCTL_MPSIZ_Pos);
 
-    // Flush trasnmit FIFOs for the IN endpoints
+    // Flush transmit FIFOs for the IN endpoint
     dcd_flush_tx_endpoint(dwc2, epnum);
 
     dwc2->daintmsk |= (1 << (DAINTMSK_IEPM_Pos + epnum));
@@ -858,7 +859,7 @@ static void dcd_edpt_disable (uint8_t rhport, uint8_t ep_addr, bool stall)
     dwc2->grstctl |= GRSTCTL_TXFFLSH;
     while ( (dwc2->grstctl & GRSTCTL_TXFFLSH_Msk) != 0 ) {}
 */
-    // Flush trasnmit FIFOs for the IN endpoints
+    // Flush transmit FIFOs for the IN endpoint
     dcd_flush_tx_endpoint(dwc2, epnum);
   }
   else
