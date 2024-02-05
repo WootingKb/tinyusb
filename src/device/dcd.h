@@ -132,6 +132,9 @@ void dcd_connect(uint8_t rhport) TU_ATTR_WEAK;
 // Disconnect by disabling internal pull-up resistor on D+/D-
 void dcd_disconnect(uint8_t rhport) TU_ATTR_WEAK;
 
+// Set new (max) intended bus speed
+void dcd_speed_set(tusb_speed_t speed) TU_ATTR_WEAK;
+
 //--------------------------------------------------------------------+
 // Endpoint API
 //--------------------------------------------------------------------+

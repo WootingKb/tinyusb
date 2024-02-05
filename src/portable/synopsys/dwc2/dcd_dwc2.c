@@ -95,6 +95,8 @@ static uint16_t ep0_pending[2];                   // Index determines direction 
 static uint16_t _allocated_fifo_words_tx;         // TX FIFO size in words (IN EPs)
 static bool     _out_ep_closed;                   // Flag to check if RX FIFO size needs an update (reduce its size)
 
+static tusb_speed_t _usb_max_speed = TUSB_SPEED_INVALID;  // Value to indicate the intended (max) USB speed
+
 // Flush the TX-FIFO and wait until we have confirmed it cleared
 static void dcd_flush_tx_endpoint(dwc2_regs_t * dwc2, uint8_t epnum)
 {
@@ -493,7 +495,20 @@ static void phy_hs_init(dwc2_regs_t * dwc2)
   // Set max speed
   uint32_t dcfg = dwc2->dcfg;
   dcfg &= ~DCFG_DSPD_Msk;
-  dcfg |= DCFG_DSPD_HS << DCFG_DSPD_Pos;
+
+  // Handle the intended (max) speed
+  switch (_usb_max_speed)
+  {
+    // Limit to Full-Speed
+    case TUSB_SPEED_FULL:
+      dcfg |= DCFG_DSPD_FS_HSPHY << DCFG_DSPD_Pos;
+    break;
+
+    // Default to Hi-Speed if speed is not Full-Speed
+    default:
+      dcfg |= DCFG_DSPD_HS << DCFG_DSPD_Pos;
+    break;
+  }
 
   // XCVRDLY: transceiver delay between xcvr_sel and txvalid during device chirp is required
   // when using with some PHYs such as USB334x (USB3341, USB3343, USB3346, USB3347)
@@ -1364,6 +1379,11 @@ void dcd_int_handler(uint8_t rhport)
   //    printf("      IISOIXFR!\r\n");
   ////    TU_LOG(DWC2_DEBUG, "      IISOIXFR!\r\n");
   //  }
+}
+
+void dcd_speed_set(tusb_speed_t speed)
+{
+  _usb_max_speed = speed;
 }
 
 #endif

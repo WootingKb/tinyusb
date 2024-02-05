@@ -334,6 +334,15 @@ tusb_speed_t tud_speed_get(void)
   return (tusb_speed_t) _usbd_dev.speed;
 }
 
+bool tud_speed_set(tusb_speed_t speed)
+{
+  TU_VERIFY(dcd_speed_set);
+
+  dcd_speed_set(speed);
+
+  return true;
+}
+
 bool tud_connected(void)
 {
   return _usbd_dev.connected;
