@@ -503,7 +503,7 @@ void tud_task_ext(uint32_t timeout_ms, bool in_isr)
           if (tud_umount_cb) tud_umount_cb();
         }
 
-        // Inform application about an no longer valid suspend state
+        // Inform application about a no longer valid suspend state
         if ( _usbd_dev.suspended )
         {
           _usbd_dev.suspended = 0;
