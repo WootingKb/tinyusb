@@ -488,7 +488,6 @@ void tud_task_ext(uint32_t timeout_ms, bool in_isr)
     {
       case DCD_EVENT_BUS_RESET:
         TU_LOG2(": %s Speed\r\n", tu_str_speed[event.bus_reset.speed]);
-//        usbd_reset(event.rhport);
         _usbd_dev.speed = event.bus_reset.speed;
       TU_ATTR_FALLTHROUGH;
 
@@ -1099,17 +1098,6 @@ void dcd_event_handler(dcd_event_t const * event, bool in_isr)
 {
   switch (event->event_id)
    {
-//     case DCD_EVENT_BUS_RESET:
-//     TU_ATTR_FALLTHROUGH;
-
-//     case DCD_EVENT_UNPLUGGED:
-//       _usbd_dev.connected  = 0;
-//       _usbd_dev.addressed  = 0;
-// //      _usbd_dev.cfg_num    = 0;
-// //      _usbd_dev.suspended  = 0;
-//       osal_queue_send(_usbd_q, event, in_isr);
-//     break;
-
     case DCD_EVENT_SUSPEND:
       // NOTE: When plugging/unplugging device, the D+/D- state are unstable and
       // can accidentally meet the SUSPEND condition ( Bus Idle for 3ms ).
