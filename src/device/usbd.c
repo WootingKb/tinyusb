@@ -488,16 +488,33 @@ void tud_task_ext(uint32_t timeout_ms, bool in_isr)
     {
       case DCD_EVENT_BUS_RESET:
         TU_LOG2(": %s Speed\r\n", tu_str_speed[event.bus_reset.speed]);
-        usbd_reset(event.rhport);
+//        usbd_reset(event.rhport);
         _usbd_dev.speed = event.bus_reset.speed;
-        TU_ATTR_FALLTHROUGH;
+      TU_ATTR_FALLTHROUGH;
 
       case DCD_EVENT_UNPLUGGED:
         TU_LOG2("\r\n");
-        usbd_reset(event.rhport);
 
-        // invoke callback
-        if (tud_umount_cb) tud_umount_cb();
+        // Only inform application about the unmount if it was mounted before
+        if ( _usbd_dev.cfg_num )
+        {
+          _usbd_dev.cfg_num = 0;
+
+          // invoke callback
+          if (tud_umount_cb) tud_umount_cb();
+        }
+
+        // Inform application about an no longer valid suspend state
+        if ( _usbd_dev.suspended )
+        {
+          _usbd_dev.suspended = 0;
+
+          // invoke callback
+          if (tud_resume_cb) tud_resume_cb();
+        }
+
+        // Completely clear the current USB state
+        usbd_reset(event.rhport);
       break;
 
       case DCD_EVENT_SETUP_RECEIVED:
@@ -1081,15 +1098,17 @@ static bool process_get_descriptor(uint8_t rhport, tusb_control_request_t const 
 void dcd_event_handler(dcd_event_t const * event, bool in_isr)
 {
   switch (event->event_id)
-  {
-    case DCD_EVENT_BUS_RESET:
-    case DCD_EVENT_UNPLUGGED:
-      _usbd_dev.connected  = 0;
-      _usbd_dev.addressed  = 0;
-      _usbd_dev.cfg_num    = 0;
-      _usbd_dev.suspended  = 0;
-      osal_queue_send(_usbd_q, event, in_isr);
-    break;
+   {
+//     case DCD_EVENT_BUS_RESET:
+//     TU_ATTR_FALLTHROUGH;
+
+//     case DCD_EVENT_UNPLUGGED:
+//       _usbd_dev.connected  = 0;
+//       _usbd_dev.addressed  = 0;
+// //      _usbd_dev.cfg_num    = 0;
+// //      _usbd_dev.suspended  = 0;
+//       osal_queue_send(_usbd_q, event, in_isr);
+//     break;
 
     case DCD_EVENT_SUSPEND:
       // NOTE: When plugging/unplugging device, the D+/D- state are unstable and
