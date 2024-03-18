@@ -488,16 +488,41 @@ void tud_task_ext(uint32_t timeout_ms, bool in_isr)
     {
       case DCD_EVENT_BUS_RESET:
         TU_LOG2(": %s Speed\r\n", tu_str_speed[event.bus_reset.speed]);
-        usbd_reset(event.rhport);
-        _usbd_dev.speed = event.bus_reset.speed;
-      break;
+      TU_ATTR_FALLTHROUGH;
 
       case DCD_EVENT_UNPLUGGED:
         TU_LOG2("\r\n");
+
+        // Only inform application about the unmount if it was mounted before
+        if ( _usbd_dev.cfg_num )
+        {
+          _usbd_dev.cfg_num = 0;
+
+          // invoke callback
+          if (tud_umount_cb) tud_umount_cb();
+        }
+
+        // Inform application about a no longer valid suspend state
+        if ( _usbd_dev.suspended )
+        {
+          _usbd_dev.suspended = 0;
+
+          // invoke callback
+          if (tud_resume_cb) tud_resume_cb();
+        }
+
+        // Completely clear the current USB state
         usbd_reset(event.rhport);
 
-        // invoke callback
-        if (tud_umount_cb) tud_umount_cb();
+        // Recover the intended bus speed
+        if (DCD_EVENT_BUS_RESET == event.event_id)
+        {
+          _usbd_dev.speed = event.bus_reset.speed;
+        }
+        else if (DCD_EVENT_UNPLUGGED == event.event_id)
+        {
+          _usbd_dev.speed = DCD_EVENT_INVALID;
+        }
       break;
 
       case DCD_EVENT_SETUP_RECEIVED:
@@ -1082,12 +1107,20 @@ void dcd_event_handler(dcd_event_t const * event, bool in_isr)
 {
   switch (event->event_id)
   {
+    case DCD_EVENT_BUS_RESET:
+      // Skip event if device wasn't connected and speed hasn't changed
+      if ( _usbd_dev.connected || event->bus_reset.speed != _usbd_dev.speed )
+      {
+        osal_queue_send(_usbd_q, event, in_isr);
+      }
+    break;
+
     case DCD_EVENT_UNPLUGGED:
-      _usbd_dev.connected  = 0;
-      _usbd_dev.addressed  = 0;
-      _usbd_dev.cfg_num    = 0;
-      _usbd_dev.suspended  = 0;
-      osal_queue_send(_usbd_q, event, in_isr);
+      // Skip event if device wasn't connected in the first place
+      if ( _usbd_dev.connected )
+      {
+        osal_queue_send(_usbd_q, event, in_isr);
+      }
     break;
 
     case DCD_EVENT_SUSPEND:
@@ -1095,7 +1128,7 @@ void dcd_event_handler(dcd_event_t const * event, bool in_isr)
       // can accidentally meet the SUSPEND condition ( Bus Idle for 3ms ).
       // In addition, some MCUs such as SAMD or boards that haven no VBUS detection cannot distinguish
       // suspended vs disconnected. We will skip handling SUSPEND/RESUME event if not currently connected
-      if ( _usbd_dev.connected )
+      if ( _usbd_dev.connected && !_usbd_dev.suspended )
       {
         _usbd_dev.suspended = 1;
         osal_queue_send(_usbd_q, event, in_isr);
@@ -1104,7 +1137,7 @@ void dcd_event_handler(dcd_event_t const * event, bool in_isr)
 
     case DCD_EVENT_RESUME:
       // skip event if not connected (especially required for SAMD)
-      if ( _usbd_dev.connected )
+      if ( _usbd_dev.connected && _usbd_dev.suspended )
       {
         _usbd_dev.suspended = 0;
         osal_queue_send(_usbd_q, event, in_isr);
