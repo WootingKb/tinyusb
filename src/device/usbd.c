@@ -282,6 +282,9 @@ static osal_mutex_t _usbd_mutex;
 //--------------------------------------------------------------------+
 // Prototypes
 //--------------------------------------------------------------------+
+static void configuration_reset(uint8_t rhport);
+static void usbd_reset(uint8_t rhport);
+static bool invoke_class_control(uint8_t rhport, usbd_class_driver_t const * driver, tusb_control_request_t const * request);
 static bool process_control_request(uint8_t rhport, tusb_control_request_t const * p_request);
 static bool process_set_config(uint8_t rhport, uint8_t cfg_num);
 static bool process_get_descriptor(uint8_t rhport, tusb_control_request_t const * p_request);
@@ -387,7 +390,7 @@ bool tud_init (uint8_t rhport)
   TU_LOG2("USBD init\r\n");
   TU_LOG2_INT(sizeof(usbd_device_t));
 
-  tu_varclr(&_usbd_dev);
+  configuration_reset(rhport);
 
 #if CFG_TUSB_OS != OPT_OS_NONE
   // Init device mutex
@@ -430,8 +433,11 @@ static void configuration_reset(uint8_t rhport)
   }
 
   tu_varclr(&_usbd_dev);
+
   memset(_usbd_dev.itf2drv, DRVID_INVALID, sizeof(_usbd_dev.itf2drv)); // invalid mapping
   memset(_usbd_dev.ep2drv , DRVID_INVALID, sizeof(_usbd_dev.ep2drv )); // invalid mapping
+
+  _usbd_dev.speed = TUSB_SPEED_INVALID;
 }
 
 static void usbd_reset(uint8_t rhport)
