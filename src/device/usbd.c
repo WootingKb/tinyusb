@@ -282,6 +282,7 @@ static osal_mutex_t _usbd_mutex;
 //--------------------------------------------------------------------+
 // Prototypes
 //--------------------------------------------------------------------+
+static void usbd_set_defaults(void);
 static void configuration_reset(uint8_t rhport);
 static void usbd_reset(uint8_t rhport);
 static bool invoke_class_control(uint8_t rhport, usbd_class_driver_t const * driver, tusb_control_request_t const * request);
@@ -390,7 +391,7 @@ bool tud_init (uint8_t rhport)
   TU_LOG2("USBD init\r\n");
   TU_LOG2_INT(sizeof(usbd_device_t));
 
-  configuration_reset(rhport);
+  usbd_set_defaults();
 
 #if CFG_TUSB_OS != OPT_OS_NONE
   // Init device mutex
@@ -425,6 +426,17 @@ bool tud_init (uint8_t rhport)
   return true;
 }
 
+static void usbd_set_defaults(void)
+{
+  tu_varclr(&_usbd_dev);
+
+  // Set values to their defaults
+  memset(_usbd_dev.itf2drv, DRVID_INVALID, sizeof(_usbd_dev.itf2drv)); // invalid mapping
+  memset(_usbd_dev.ep2drv , DRVID_INVALID, sizeof(_usbd_dev.ep2drv )); // invalid mapping
+
+  _usbd_dev.speed = TUSB_SPEED_INVALID; // Unknown initial speed
+}
+
 static void configuration_reset(uint8_t rhport)
 {
   for ( uint8_t i = 0; i < TOTAL_DRIVER_COUNT; i++ )
@@ -432,12 +444,7 @@ static void configuration_reset(uint8_t rhport)
     get_driver(i)->reset(rhport);
   }
 
-  tu_varclr(&_usbd_dev);
-
-  memset(_usbd_dev.itf2drv, DRVID_INVALID, sizeof(_usbd_dev.itf2drv)); // invalid mapping
-  memset(_usbd_dev.ep2drv , DRVID_INVALID, sizeof(_usbd_dev.ep2drv )); // invalid mapping
-
-  _usbd_dev.speed = TUSB_SPEED_INVALID;
+  usbd_set_defaults();
 }
 
 static void usbd_reset(uint8_t rhport)
