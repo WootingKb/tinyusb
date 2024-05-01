@@ -63,16 +63,28 @@ extern uint32_t SystemCoreClock;
 
 TU_ATTR_ALWAYS_INLINE
 static inline void dwc2_dcd_int_enable(uint8_t rhport) {
-  (void)rhport;
-  NVIC_EnableIRQ(RHPORT_IRQn);
-  // NVIC_EnableIRQ(USBHS_WKUP_IRQn);
+  switch (rhport) {
+    case 0:
+      NVIC_EnableIRQ(USBFS_IRQn);
+    break;
+
+    case 1:
+      NVIC_EnableIRQ(USBHS_IRQn);
+    break;
+  }
 }
 
 TU_ATTR_ALWAYS_INLINE
 static inline void dwc2_dcd_int_disable(uint8_t rhport) {
-  (void)rhport;
-  NVIC_DisableIRQ(RHPORT_IRQn);
-  // NVIC_DisableIRQ(USBHS_WKUP_IRQn);
+  switch (rhport) {
+    case 0:
+      NVIC_DisableIRQ(USBFS_IRQn);
+    break;
+
+    case 1:
+      NVIC_DisableIRQ(USBHS_IRQn);
+    break;
+  }
 }
 
 TU_ATTR_ALWAYS_INLINE
