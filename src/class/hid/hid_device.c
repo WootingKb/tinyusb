@@ -60,20 +60,47 @@ typedef struct
 
 CFG_TUSB_MEM_SECTION static hidd_interface_t _hidd_itf[CFG_TUD_HID];
 
-/*------------- Helpers -------------*/
-static inline uint8_t get_index_by_itfnum(uint8_t itf_num)
+//--------------------------------------------------------------------+
+// APPLICATION API
+//--------------------------------------------------------------------+
+uint8_t tud_hid_get_instance(uint8_t itf_num)
 {
-	for (uint8_t i=0; i < CFG_TUD_HID; i++ )
+  // Search for the interface
+  for (uint8_t i=0; i < CFG_TUD_HID; i++ )
 	{
-		if ( itf_num == _hidd_itf[i].itf_num ) return i;
+    // Skip current instance if that isn't assigned yet
+    if (0 == _hidd_itf[i].ep_in && 0 == _hidd_itf[i].ep_out)
+    {
+      continue;
+    }
+
+		if (itf_num == _hidd_itf[i].itf_num)
+    {
+      return i;
+    }
 	}
 
 	return 0xFF;
 }
 
-//--------------------------------------------------------------------+
-// APPLICATION API
-//--------------------------------------------------------------------+
+uint8_t tud_hid_get_itf_num(uint8_t instance)
+{
+  // Abort if an invalid instance number was given
+  if (CFG_TUD_HID <= instance)
+  {
+    return 0xFF;
+  }
+
+  // Abort if the instance hasn't a valid interface assigned yet
+  if (0 == _hidd_itf[instance].ep_in && 0 == _hidd_itf[instance].ep_out)
+  {
+    return 0xFF;
+  }
+
+  // Return the interface number
+  return _hidd_itf[instance].itf_num;
+}
+
 bool tud_hid_n_ready(uint8_t instance)
 {
   uint8_t const ep_in = _hidd_itf[instance].ep_in;
@@ -241,7 +268,7 @@ bool hidd_control_xfer_cb (uint8_t rhport, uint8_t stage, tusb_control_request_t
 {
   TU_VERIFY(request->bmRequestType_bit.recipient == TUSB_REQ_RCPT_INTERFACE);
 
-  uint8_t const hid_itf = get_index_by_itfnum((uint8_t) request->wIndex);
+  uint8_t const hid_itf = tud_hid_get_instance((uint8_t) request->wIndex);
   TU_VERIFY(hid_itf < CFG_TUD_HID);
 
   hidd_interface_t* p_hid = &_hidd_itf[hid_itf];
