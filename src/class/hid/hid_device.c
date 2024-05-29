@@ -103,12 +103,16 @@ uint8_t tud_hid_get_itf_num(uint8_t instance)
 
 bool tud_hid_n_ready(uint8_t instance)
 {
+  TU_VERIFY( CFG_TUD_HID > instance );
+
   uint8_t const ep_in = _hidd_itf[instance].ep_in;
   return tud_ready() && (ep_in != 0) && !usbd_edpt_busy(TUD_OPT_RHPORT, ep_in);
 }
 
 bool tud_hid_n_report(uint8_t instance, uint8_t report_id, void const* report, uint16_t len)
 {
+  TU_VERIFY( CFG_TUD_HID > instance );
+
   uint8_t const rhport = 0;
   hidd_interface_t * p_hid = &_hidd_itf[instance];
 
@@ -135,11 +139,15 @@ bool tud_hid_n_report(uint8_t instance, uint8_t report_id, void const* report, u
 
 uint8_t tud_hid_n_interface_protocol(uint8_t instance)
 {
+  TU_VERIFY( CFG_TUD_HID > instance, 0xFF );
+
   return _hidd_itf[instance].itf_protocol;
 }
 
 uint8_t tud_hid_n_get_protocol(uint8_t instance)
 {
+  TU_VERIFY( CFG_TUD_HID > instance, 0xFF );
+
   return _hidd_itf[instance].protocol_mode;
 }
 
