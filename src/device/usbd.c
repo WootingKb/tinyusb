@@ -1280,6 +1280,9 @@ bool usbd_edpt_claim(uint8_t rhport, uint8_t ep_addr)
   // TU_VERIFY(tud_ready());
 
   uint8_t const epnum       = tu_edpt_number(ep_addr);
+
+  TU_ASSERT( 0 < epnum && CFG_TUD_ENDPPOINT_MAX > epnum );
+
   uint8_t const dir         = tu_edpt_dir(ep_addr);
   tu_edpt_state_t* ep_state = &_usbd_dev.ep_status[epnum][dir];
 
