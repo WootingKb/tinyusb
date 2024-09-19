@@ -100,7 +100,7 @@ static tusb_speed_t _usb_max_speed = TUSB_SPEED_INVALID;  // Value to indicate t
 // Flush the TX-FIFO and wait until we have confirmed it cleared
 static void dcd_flush_tx_endpoint(dwc2_regs_t * dwc2, uint8_t epnum)
 {
-  dwc2->grstctl |= GRSTCTL_TXFNUM_Msk & (epnum << GRSTCTL_TXFNUM_Pos);
+  dwc2->grstctl = GRSTCTL_TXFNUM_Msk & (epnum << GRSTCTL_TXFNUM_Pos);
   dwc2->grstctl |= GRSTCTL_TXFFLSH;
 
   while (0 != (dwc2->grstctl & GRSTCTL_TXFFLSH_Msk)) { ; }
@@ -109,7 +109,7 @@ static void dcd_flush_tx_endpoint(dwc2_regs_t * dwc2, uint8_t epnum)
 // Flush the RX-FIFO and wait until we have confirmed it cleared
 static void dcd_flush_rx_endpoint(dwc2_regs_t * dwc2)
 {
-  dwc2->grstctl |= GRSTCTL_RXFFLSH;
+  dwc2->grstctl = GRSTCTL_RXFFLSH;
 
   while (0 != (dwc2->grstctl & GRSTCTL_RXFFLSH_Msk)) { ; }
 }
