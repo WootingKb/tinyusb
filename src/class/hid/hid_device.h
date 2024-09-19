@@ -52,12 +52,6 @@
 // CFG_TUD_HID > 1
 //--------------------------------------------------------------------+
 
-// Returns the instance of the given interface or 0xFF if not available
-uint8_t tud_hid_get_instance(uint8_t itf_num);
-
-// Returns the interface number of the given instance or 0xFF if not available
-uint8_t tud_hid_get_itf_num(uint8_t instance);
-
 // Check if the interface is ready to use
 bool tud_hid_n_ready(uint8_t instance);
 
