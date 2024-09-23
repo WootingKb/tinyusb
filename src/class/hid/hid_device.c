@@ -74,6 +74,14 @@ static inline uint8_t get_index_by_itfnum(uint8_t itf_num)
 //--------------------------------------------------------------------+
 // APPLICATION API
 //--------------------------------------------------------------------+
+uint8_t tud_hid_get_itfnum_by_instance(uint8_t index)
+{
+  // Only return the interface number when the instance is valid
+	if ( _hidd_itf[index].ep_in || _hidd_itf[index].ep_out ) return _hidd_itf[index].itf_num;
+
+	return 0xFF;
+}
+
 bool tud_hid_n_ready(uint8_t instance)
 {
   uint8_t const ep_in = _hidd_itf[instance].ep_in;
