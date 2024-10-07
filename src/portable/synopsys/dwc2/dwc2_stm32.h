@@ -69,6 +69,19 @@
   #define EP_MAX_FS       6
   #define EP_FIFO_SIZE_FS 1280
 
+#elif CFG_TUSB_MCU == OPT_MCU_STM32U5
+  #include "stm32u5xx.h"
+  // U59x/5Ax/5Fx/5Gx are highspeed with built-in HS PHY
+  #ifdef USB_OTG_FS
+    #define USB_OTG_FS_PERIPH_BASE    USB_OTG_FS_BASE
+    #define EP_MAX_FS                 6
+    #define EP_FIFO_SIZE_FS           1280
+  #else
+    #define USB_OTG_HS_PERIPH_BASE    USB_OTG_HS_BASE
+    #define EP_MAX_HS                 9
+    #define EP_FIFO_SIZE_HS           4096
+  #endif
+
 #else
   #error "Unsupported MCUs"
 #endif
