@@ -132,6 +132,11 @@ void dcd_connect(uint8_t rhport) TU_ATTR_WEAK;
 // Disconnect by disabling internal pull-up resistor on D+/D-
 void dcd_disconnect(uint8_t rhport) TU_ATTR_WEAK;
 
+#if CFG_TUD_TEST_MODE
+// Put device into a test mode (needs power cycle to quit)
+void dcd_enter_test_mode(uint8_t rhport, tusb_feature_test_mode_t test_selector);
+#endif
+
 // Set new (max) intended bus speed
 void dcd_speed_set(tusb_speed_t speed) TU_ATTR_WEAK;
 
