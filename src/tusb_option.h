@@ -356,6 +356,11 @@
   #define CFG_TUD_NCM         0
 #endif
 
+// USB 2.0 7.1.20: compliance test mode support
+#ifndef CFG_TUD_TEST_MODE
+  #define CFG_TUD_TEST_MODE       0
+#endif
+
 //--------------------------------------------------------------------
 // HOST OPTIONS
 //--------------------------------------------------------------------
