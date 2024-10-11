@@ -290,6 +290,20 @@ static bool process_control_request(uint8_t rhport, tusb_control_request_t const
 static bool process_set_config(uint8_t rhport, uint8_t cfg_num);
 static bool process_get_descriptor(uint8_t rhport, tusb_control_request_t const * p_request);
 
+#if CFG_TUD_TEST_MODE
+static bool process_test_mode_cb(uint8_t rhport, uint8_t stage, tusb_control_request_t const * request) {
+  TU_VERIFY(CONTROL_STAGE_ACK == stage);
+
+  uint8_t const selector = tu_u16_high(request->wIndex);
+
+  TU_LOG(USBD_DBG, "    Enter Test Mode (test selector index: %d)\r\n", selector);
+
+  dcd_enter_test_mode(rhport, (tusb_feature_test_mode_t) selector);
+
+  return true;
+}
+#endif
+
 // from usbd_control.c
 void usbd_control_reset(void);
 void usbd_control_set_request(tusb_control_request_t const *request);
@@ -774,14 +788,31 @@ static bool process_control_request(uint8_t rhport, tusb_control_request_t const
         break;
 
         case TUSB_REQ_SET_FEATURE:
-          // Only support remote wakeup for device feature
-          TU_VERIFY(TUSB_REQ_FEATURE_REMOTE_WAKEUP == p_request->wValue);
+          switch(p_request->wValue) {
+            case TUSB_REQ_FEATURE_REMOTE_WAKEUP:
+              TU_LOG(USBD_DBG, "    Enable Remote Wakeup\r\n");
+              // Host may enable remote wake up before suspending especially HID device
+              _usbd_dev.remote_wakeup_en = true;
+              tud_control_status(rhport, p_request);
+            break;
 
-          TU_LOG(USBD_DBG, "    Enable Remote Wakeup\r\n");
+            #if CFG_TUD_TEST_MODE
+            case TUSB_REQ_FEATURE_TEST_MODE: {
+              // Only handle the test mode if supported and valid
+              TU_VERIFY(0 == tu_u16_low(p_request->wIndex));
 
-          // Host may enable remote wake up before suspending especially HID device
-          _usbd_dev.remote_wakeup_en = true;
-          tud_control_status(rhport, p_request);
+              uint8_t const selector = tu_u16_high(p_request->wIndex);
+              TU_VERIFY(TUSB_FEATURE_TEST_J <= selector && selector <= TUSB_FEATURE_TEST_FORCE_ENABLE);
+
+              usbd_control_set_complete_callback(process_test_mode_cb);
+              tud_control_status(rhport, p_request);
+              break;
+            }
+            #endif /* CFG_TUD_TEST_MODE */
+
+            // Stall unsupported feature selector
+            default: return false;
+          }
         break;
 
         case TUSB_REQ_CLEAR_FEATURE:

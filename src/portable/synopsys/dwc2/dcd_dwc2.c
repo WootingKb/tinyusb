@@ -1388,4 +1388,13 @@ void dcd_speed_set(tusb_speed_t speed)
   _usb_max_speed = speed;
 }
 
+#if CFG_TUD_TEST_MODE
+void dcd_enter_test_mode(uint8_t rhport, tusb_feature_test_mode_t test_selector) {
+  dwc2_regs_t* dwc2 = DWC2_REG(rhport);
+
+  // Enable the test mode
+  dwc2->dctl = (dwc2->dctl & ~DCTL_TCTL_Msk) | (((uint8_t) test_selector) << DCTL_TCTL_Pos);
+}
+#endif
+
 #endif
