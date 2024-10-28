@@ -1262,6 +1262,11 @@ void dcd_int_handler(uint8_t rhport)
 
   uint32_t const int_status = dwc2->gintsts & dwc2->gintmsk;
 
+  if(int_status & GINTSTS_MMIS)
+  {
+    dwc2->gintsts = GINTSTS_MMIS;
+  }
+
   if(int_status & GINTSTS_USBRST)
   {
     // USBRST is start of reset.
