@@ -55,6 +55,9 @@
 // Get the interface number for the HID instance index  
 uint8_t tud_hid_get_itfnum_by_instance(uint8_t index);
 
+// Get the HID instance number for the interface index
+uint8_t tud_hid_get_instance_by_itfnum(uint8_t index);
+
 // Check if the interface is ready to use
 bool tud_hid_n_ready(uint8_t instance);
 

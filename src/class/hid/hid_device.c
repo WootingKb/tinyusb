@@ -61,15 +61,6 @@ typedef struct
 CFG_TUSB_MEM_SECTION static hidd_interface_t _hidd_itf[CFG_TUD_HID];
 
 /*------------- Helpers -------------*/
-static inline uint8_t get_index_by_itfnum(uint8_t itf_num)
-{
-	for (uint8_t i=0; i < CFG_TUD_HID; i++ )
-	{
-		if ( itf_num == _hidd_itf[i].itf_num ) return i;
-	}
-
-	return 0xFF;
-}
 
 //--------------------------------------------------------------------+
 // APPLICATION API
@@ -82,14 +73,30 @@ uint8_t tud_hid_get_itfnum_by_instance(uint8_t index)
   return 0xFF;
 }
 
+uint8_t tud_hid_get_instance_by_itfnum(uint8_t index)
+{
+  // Search for the interface index number
+  for (uint8_t i=0; i < CFG_TUD_HID; i++ )
+  {
+    // Only return the instance number when the interface is valid
+    if ( index == _hidd_itf[i].itf_num && (_hidd_itf[i].ep_in || _hidd_itf[i].ep_out) ) return i;
+  }
+
+  return 0xFF;
+}
+
 bool tud_hid_n_ready(uint8_t instance)
 {
+  TU_VERIFY(instance < CFG_TUD_HID);
+
   uint8_t const ep_in = _hidd_itf[instance].ep_in;
   return tud_ready() && (ep_in != 0) && !usbd_edpt_busy(TUD_OPT_RHPORT, ep_in);
 }
 
 bool tud_hid_n_report(uint8_t instance, uint8_t report_id, void const* report, uint16_t len)
 {
+  TU_ASSERT(instance < CFG_TUD_HID);
+
   uint8_t const rhport = 0;
   hidd_interface_t * p_hid = &_hidd_itf[instance];
 
@@ -202,7 +209,7 @@ uint16_t hidd_open(uint8_t rhport, tusb_desc_interface_t const * desc_itf, uint1
   uint8_t hid_id;
   for(hid_id=0; hid_id<CFG_TUD_HID; hid_id++)
   {
-    if ( _hidd_itf[hid_id].ep_in == 0 )
+    if ( _hidd_itf[hid_id].ep_in == 0 && _hidd_itf[hid_id].ep_out == 0 )
     {
       p_hid = &_hidd_itf[hid_id];
       break;
@@ -249,7 +256,7 @@ bool hidd_control_xfer_cb (uint8_t rhport, uint8_t stage, tusb_control_request_t
 {
   TU_VERIFY(request->bmRequestType_bit.recipient == TUSB_REQ_RCPT_INTERFACE);
 
-  uint8_t const hid_itf = get_index_by_itfnum((uint8_t) request->wIndex);
+  uint8_t const hid_itf = tud_hid_get_instance_by_itfnum((uint8_t) request->wIndex);
   TU_VERIFY(hid_itf < CFG_TUD_HID);
 
   hidd_interface_t* p_hid = &_hidd_itf[hid_itf];
