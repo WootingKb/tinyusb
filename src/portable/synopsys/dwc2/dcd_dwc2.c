@@ -1175,6 +1175,9 @@ static void handle_epout_irq (uint8_t rhport)
           dcd_event_xfer_complete(rhport, n, xfer->total_len, XFER_RESULT_SUCCESS, true);
         }
       }
+
+      // Failsafe, clear all pending interrupts if set
+      epout[n].doepint = epout[n].doepint;
     }
   }
 }
@@ -1252,6 +1255,9 @@ static void handle_epin_irq (uint8_t rhport)
           dwc2->diepempmsk &= ~(1 << n);
         }
       }
+
+      // Failsafe, clear all pending interrupts if set
+      epin[n].diepint = epin[n].diepint;
     }
   }
 }
@@ -1348,7 +1354,7 @@ void dcd_int_handler(uint8_t rhport)
     do
     {
       handle_rxflvl_irq(rhport);
-    } while(dwc2->gotgint & GINTSTS_RXFLVL);
+    } while(dwc2->gintsts & GINTSTS_RXFLVL);
 
     // Manage RX FIFO size
     if (_out_ep_closed)
