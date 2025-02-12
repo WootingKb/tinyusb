@@ -1313,7 +1313,6 @@ void dcd_int_handler(uint8_t rhport)
   if(int_status & GINTSTS_WKUINT)
   {
     dwc2->gintsts = GINTSTS_WKUINT;
-    dcd_event_bus_signal(rhport, DCD_EVENT_RESUME, true);
   }
 
   // TODO check GINTSTS_DISCINT for disconnect detection
