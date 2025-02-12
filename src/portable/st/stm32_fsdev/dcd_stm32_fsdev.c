@@ -626,29 +626,38 @@ void dcd_int_handler(uint8_t rhport) {
     reg16_clear_bits(&USB->CNTR, USB_CNTR_LPMODE);
     reg16_clear_bits(&USB->CNTR, USB_CNTR_FSUSP);
     clear_istr_bits(USB_ISTR_WKUP);
-    dcd_event_bus_signal(0, DCD_EVENT_RESUME, true);
+
+    // Enable SOF interrupt for remote wakeup detection
+    USB->CNTR |= USB_CNTR_SOFM;
   }
 
   if (int_status & USB_ISTR_SUSP)
   {
-    /* Suspend is asserted for both suspend and unplug events. without Vbus monitoring,
-     * these events cannot be differentiated, so we only trigger suspend. */
+    // Don't put core in low power mode when remote wakeup is active
+    if (!(USB->CNTR & USB_CNTR_RESUME)) {
+      /* Suspend is asserted for both suspend and unplug events. without Vbus monitoring,
+      * these events cannot be differentiated, so we only trigger suspend. */
 
-    /* Force low-power mode in the macrocell */
-    USB->CNTR |= USB_CNTR_FSUSP;
-    USB->CNTR |= USB_CNTR_LPMODE;
+      /* Force low-power mode in the macrocell */
+      USB->CNTR |= USB_CNTR_FSUSP;
+      USB->CNTR |= USB_CNTR_LPMODE;
+    }
 
     /* clear of the ISTR bit must be done after setting of CNTR_FSUSP */
     clear_istr_bits(USB_ISTR_SUSP);
     dcd_event_bus_signal(0, DCD_EVENT_SUSPEND, true);
   }
 
-#if USE_SOF
-  if(int_status & USB_ISTR_SOF) {
+  if (int_status & USB_ISTR_SOF) {
     clear_istr_bits(USB_ISTR_SOF);
+
     dcd_event_bus_signal(0, DCD_EVENT_SOF, true);
+
+#if !USE_SOF
+    // Disable SOF interrupt since currently only used for remote wakeup detection
+    USB->CNTR &= ~USB_CNTR_SOFM;
+#endif
   }
-#endif 
 
   if(int_status & USB_ISTR_ESOF) {
     if(remoteWakeCountdown == 1u)
