@@ -105,6 +105,9 @@ bool tud_control_xfer(uint8_t rhport, tusb_control_request_t const * request, vo
 // Send STATUS (zero length) packet
 bool tud_control_status(uint8_t rhport, tusb_control_request_t const * request);
 
+// Guesses the host OS due to fingerprinting
+host_os_t tud_guess_operation_system(void);
+
 //--------------------------------------------------------------------+
 // Application Callbacks (WEAK is optional)
 //--------------------------------------------------------------------+
