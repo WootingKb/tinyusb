@@ -64,6 +64,17 @@ typedef struct
     uint8_t remote_wakeup_en      : 1; // enable/disable by host
     uint8_t remote_wakeup_support : 1; // configuration descriptor's attribute
     uint8_t self_powered          : 1; // configuration descriptor's attribute
+
+    union
+    {
+      uint8_t string_marker       : 4;
+      struct
+      {
+        uint8_t string_lenght_255 : 1; // Saw a string descriptor request with a lenght of 255 bytes
+        uint8_t string_lenght_2   : 1; // Saw a string descriptor request with a lenght of 2 bytes
+        uint8_t string_lenght_x   : 1; // Saw a string descriptor request with a different lenght
+      };
+    };
   };
 
   volatile uint8_t cfg_num; // current active configuration (0x00 is not configured)
@@ -1095,6 +1106,26 @@ static bool process_get_descriptor(uint8_t rhport, tusb_control_request_t const 
     {
       TU_LOG2(" String[%u]\r\n", desc_index);
 
+      // Handle OS fingerprinting but not for the language ID descriptor
+      if (desc_index)
+      {
+        // Log the seen characteristic for the fingerprinting
+        switch (p_request->wLength)
+        {
+          case 2:
+            _usbd_dev.string_lenght_2 = true;
+          break;
+
+          case 255:
+            _usbd_dev.string_lenght_255 = true;
+          break;
+
+          default:
+            _usbd_dev.string_lenght_x = true;
+          break;
+        }
+      }
+
       // String Descriptor always uses the desc set from user
       uint8_t const* desc_str = (uint8_t const*) tud_descriptor_string_cb(desc_index, tu_le16toh(p_request->wIndex));
       TU_VERIFY(desc_str);
@@ -1449,6 +1480,29 @@ void usbd_edpt_close(uint8_t rhport, uint8_t ep_addr)
   _usbd_dev.ep_status[epnum][dir].claimed = false;
 
   return;
+}
+
+host_os_t tud_guess_operation_system(void)
+{
+  switch (_usbd_dev.string_marker)
+  {
+    case 1:
+      return LINUX;
+    break;
+
+    case 5:
+      return WINDOWS;
+    break;
+
+    case 6:
+      return MACOS;
+    break;
+
+    default:
+    break;
+  }
+
+  return UNKNOWN;
 }
 
 #endif
