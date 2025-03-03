@@ -374,6 +374,12 @@ bool hidd_control_xfer_cb (uint8_t rhport, uint8_t stage, tusb_control_request_t
           }
 
           tud_control_status(rhport, request);
+
+          // Use this request to assume that the OS fingerprinting is done
+          if (tud_host_detection_cb)
+          {
+            tud_host_detection_cb(tud_guess_operation_system());
+          }
         }
       break;
 

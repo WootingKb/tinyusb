@@ -155,6 +155,9 @@ TU_ATTR_WEAK void tud_resume_cb(void);
 // Invoked when received control request with VENDOR TYPE
 TU_ATTR_WEAK bool tud_vendor_control_xfer_cb(uint8_t rhport, uint8_t stage, tusb_control_request_t const * request);
 
+// Invoked when host fingerprinting is compelted
+TU_ATTR_WEAK void tud_host_detection_cb(host_os_t os);
+
 //--------------------------------------------------------------------+
 // Binary Device Object Store (BOS) Descriptor Templates
 //--------------------------------------------------------------------+
