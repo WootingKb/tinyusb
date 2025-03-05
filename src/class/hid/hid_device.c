@@ -36,6 +36,10 @@
 
 #include "hid_device.h"
 
+#ifndef CFG_TUD_HID_FEATURE_BUFSIZE
+#define CFG_TUD_HID_FEATURE_BUFSIZE CFG_TUD_HID_EP_BUFSIZE
+#endif
+
 //--------------------------------------------------------------------+
 // MACRO CONSTANT TYPEDEF
 //--------------------------------------------------------------------+
