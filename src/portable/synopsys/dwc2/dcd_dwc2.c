@@ -1142,21 +1142,6 @@ static void handle_epout_irq (uint8_t rhport)
 
       uint32_t const doepint = epout->doepint;
 
-      // SETUP packet Setup Phase done.
-      if ( doepint & DOEPINT_STUP )
-      {
-        uint32_t clear_flag = DOEPINT_STUP;
-
-        // STPKTRX is only available for version from 3_00a
-        if ((doepint & DOEPINT_STPKTRX) && (dwc2->gsnpsid >= DWC2_CORE_REV_3_00a))
-        {
-          clear_flag |= DOEPINT_STPKTRX;
-        }
-
-        epout->doepint = clear_flag;
-        dcd_event_setup_received(rhport, (uint8_t*) _setup_packet, true);
-      }
-
       // OUT XFER complete
       if ( epout->doepint & DOEPINT_XFRC )
       {
@@ -1174,6 +1159,21 @@ static void handle_epout_irq (uint8_t rhport)
         {
           dcd_event_xfer_complete(rhport, n, xfer->total_len, XFER_RESULT_SUCCESS, true);
         }
+      }
+
+      // SETUP packet Setup Phase done.
+      if ( doepint & DOEPINT_STUP )
+      {
+        uint32_t clear_flag = DOEPINT_STUP;
+
+        // STPKTRX is only available for version from 3_00a
+        if ((doepint & DOEPINT_STPKTRX) && (dwc2->gsnpsid >= DWC2_CORE_REV_3_00a))
+        {
+          clear_flag |= DOEPINT_STPKTRX;
+        }
+
+        epout->doepint = clear_flag;
+        dcd_event_setup_received(rhport, (uint8_t*) _setup_packet, true);
       }
 
       // Failsafe, clear all pending interrupts if set
