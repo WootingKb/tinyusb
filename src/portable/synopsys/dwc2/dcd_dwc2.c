@@ -1313,6 +1313,10 @@ void dcd_int_handler(uint8_t rhport)
   if(int_status & GINTSTS_WKUINT)
   {
     dwc2->gintsts = GINTSTS_WKUINT;
+
+    // enable SOF to detect bus resume
+    dwc2->gintsts = GINTSTS_SOF;
+    dwc2->gintmsk |= GINTMSK_SOFM;
   }
 
   // TODO check GINTSTS_DISCINT for disconnect detection
