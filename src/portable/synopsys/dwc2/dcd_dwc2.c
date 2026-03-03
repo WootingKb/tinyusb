@@ -575,9 +575,15 @@ void dcd_init (uint8_t rhport)
   // Clear A override, force B Valid
   dwc2->gotgctl = (dwc2->gotgctl & ~GOTGCTL_AVALOEN) | GOTGCTL_BVALOEN | GOTGCTL_BVALOVAL;
 
+  // Don't handle a non-zero-length status OUT handshake on GD32F4
+  // as due to a hardware bug the MCU can mistake a non control endpoint
+  // as the control endpoint and so incorrectly trigger a STALL for the
+  // first.
+#if !TU_CHECK_MCU(OPT_MCU_GD32F4)
   // If USB host misbehaves during status portion of control xfer
   // (non zero-length packet), send STALL back and discard.
   dwc2->dcfg |= DCFG_NZLSOHSK;
+#endif
 
   // Clear all interrupts
   dwc2->gintsts |= dwc2->gintsts;
