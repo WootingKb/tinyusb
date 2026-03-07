@@ -419,4 +419,22 @@ bool hidd_xfer_cb(uint8_t rhport, uint8_t ep_addr, xfer_result_t result, uint32_
   return true;
 }
 
+// Wooting patch: expose interface ↔ instance mapping
+uint8_t tud_hid_get_itfnum_by_instance(uint8_t index) {
+  if (index < CFG_TUD_HID && (_hidd_itf[index].ep_in || _hidd_itf[index].ep_out)) {
+    return _hidd_itf[index].itf_num;
+  }
+  return 0xFF;
+}
+
+uint8_t tud_hid_get_instance_by_itfnum(uint8_t index) {
+  for (uint8_t i = 0; i < CFG_TUD_HID; i++) {
+    if (index == _hidd_itf[i].itf_num &&
+        (_hidd_itf[i].ep_in || _hidd_itf[i].ep_out)) {
+      return i;
+    }
+  }
+  return 0xFF;
+}
+
 #endif

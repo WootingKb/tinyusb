@@ -51,6 +51,12 @@
 // Application API (Multiple Instances) i.e. CFG_TUD_HID > 1
 //--------------------------------------------------------------------+
 
+// Wooting patch: get interface number for a HID instance index (0xFF if invalid)
+uint8_t tud_hid_get_itfnum_by_instance(uint8_t index);
+
+// Wooting patch: get HID instance index for an interface number (0xFF if not found)
+uint8_t tud_hid_get_instance_by_itfnum(uint8_t index);
+
 // Check if the interface is ready to use
 bool tud_hid_n_ready(uint8_t instance);
 
