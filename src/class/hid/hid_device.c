@@ -359,7 +359,9 @@ bool hidd_control_xfer_cb (uint8_t rhport, uint8_t stage, tusb_control_request_t
             report_len--;
           }
 
-          tud_hid_set_report_cb(hid_itf, report_id, (hid_report_type_t) report_type, report_buf, report_len);
+          // Control-path SetReport has no endpoint to rearm; discard the
+          // accept-more signal.
+          (void) tud_hid_set_report_cb(hid_itf, report_id, (hid_report_type_t) report_type, report_buf, report_len);
         }
       break;
 
@@ -468,11 +470,23 @@ bool hidd_xfer_cb(uint8_t rhport, uint8_t ep_addr, xfer_result_t result, uint32_
   // Received report successfully
   else if (ep_addr == p_hid->ep_out)
   {
-    tud_hid_set_report_cb(instance, 0, HID_REPORT_TYPE_OUTPUT, p_hid->epout_buf, (uint16_t) xferred_bytes);
-    TU_ASSERT(usbd_edpt_xfer(rhport, p_hid->ep_out, p_hid->epout_buf, sizeof(p_hid->epout_buf)));
+    bool accept_more = tud_hid_set_report_cb(instance, 0, HID_REPORT_TYPE_OUTPUT, p_hid->epout_buf, (uint16_t) xferred_bytes);
+    if (accept_more)
+    {
+      TU_ASSERT(usbd_edpt_xfer(rhport, p_hid->ep_out, p_hid->epout_buf, sizeof(p_hid->epout_buf)));
+    }
+    // else: application will call tud_hid_rearm_out_report() once ready.
   }
 
   return true;
+}
+
+bool tud_hid_rearm_out_report(uint8_t instance)
+{
+  TU_VERIFY(instance < CFG_TUD_HID);
+  hidd_interface_t* p_hid = &_hidd_itf[instance];
+  TU_VERIFY(p_hid->ep_out);
+  return usbd_edpt_xfer(TUD_OPT_RHPORT, p_hid->ep_out, p_hid->epout_buf, sizeof(p_hid->epout_buf));
 }
 
 #endif
