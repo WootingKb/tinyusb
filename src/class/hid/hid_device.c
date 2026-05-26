@@ -339,7 +339,9 @@ bool hidd_control_xfer_cb(uint8_t rhport, uint8_t stage, tusb_control_request_t 
             report_len--;
           }
 
-          tud_hid_set_report_cb(hid_itf, report_id, (hid_report_type_t) report_type, report_buf, report_len);
+          // Control-path SetReport has no endpoint to rearm; discard the
+          // accept-more signal.
+          (void) tud_hid_set_report_cb(hid_itf, report_id, (hid_report_type_t) report_type, report_buf, report_len);
         }
         break;
 
@@ -407,16 +409,25 @@ bool hidd_xfer_cb(uint8_t rhport, uint8_t ep_addr, xfer_result_t result, uint32_
   } else {
     // Output report
     if (XFER_RESULT_SUCCESS == result) {
-      tud_hid_set_report_cb(instance, 0, HID_REPORT_TYPE_OUTPUT, p_epbuf->epout, (uint16_t)xferred_bytes);
+      bool accept_more = tud_hid_set_report_cb(instance, 0, HID_REPORT_TYPE_OUTPUT, p_epbuf->epout, (uint16_t) xferred_bytes);
+      if (accept_more) {
+        TU_ASSERT(usbd_edpt_xfer(rhport, p_hid->ep_out, p_epbuf->epout, CFG_TUD_HID_EP_BUFSIZE, false));
+      }
     } else {
       tud_hid_report_failed_cb(instance, HID_REPORT_TYPE_OUTPUT, p_epbuf->epout, (uint16_t) xferred_bytes);
+      TU_ASSERT(usbd_edpt_xfer(rhport, p_hid->ep_out, p_epbuf->epout, CFG_TUD_HID_EP_BUFSIZE, false));
     }
-
-    // prepare for new transfer
-    TU_ASSERT(usbd_edpt_xfer(rhport, p_hid->ep_out, p_epbuf->epout, CFG_TUD_HID_EP_BUFSIZE, false));
   }
 
   return true;
+}
+
+bool tud_hid_rearm_out_report(uint8_t instance) {
+  TU_VERIFY(instance < CFG_TUD_HID);
+  hidd_interface_t* p_hid = &_hidd_itf[instance];
+  hidd_epbuf_t* p_epbuf = &_hidd_epbuf[instance];
+  TU_VERIFY(p_hid->ep_out);
+  return usbd_edpt_xfer(TUD_OPT_RHPORT, p_hid->ep_out, p_epbuf->epout, CFG_TUD_HID_EP_BUFSIZE, false);
 }
 
 // Wooting patch: expose interface ↔ instance mapping

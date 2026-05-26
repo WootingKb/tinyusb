@@ -141,8 +141,21 @@ uint8_t const * tud_hid_descriptor_report_cb(uint8_t instance);
 uint16_t tud_hid_get_report_cb(uint8_t instance, uint8_t report_id, hid_report_type_t report_type, uint8_t* buffer, uint16_t reqlen);
 
 // Invoked when received SET_REPORT control request or
-// received data on OUT endpoint (Report ID = 0, Type = OUTPUT)
-void tud_hid_set_report_cb(uint8_t instance, uint8_t report_id, hid_report_type_t report_type, uint8_t const* buffer, uint16_t bufsize);
+// received data on OUT endpoint ( Report ID = 0, Type = 0 )
+// Return value controls OUT-endpoint rearming: returning true allows the
+// class driver to immediately rearm the endpoint for the next OUT transfer
+// (default/legacy behavior); returning false defers rearming so the host
+// stalls further OUT traffic until the application calls
+// `tud_hid_rearm_out_report(instance)`. Applications that need
+// backpressure (e.g. finite buffer pools processed on a main loop) can
+// return false on overflow and rearm later. Control-path SetReport
+// invocations ignore the return value.
+bool tud_hid_set_report_cb(uint8_t instance, uint8_t report_id, hid_report_type_t report_type, uint8_t const* buffer, uint16_t bufsize);
+
+// Rearm the HID OUT endpoint so the next SET_REPORT can be received. Only
+// needed when `tud_hid_set_report_cb` returned false for this instance;
+// otherwise the class driver rearms automatically.
+bool tud_hid_rearm_out_report(uint8_t instance);
 
 // Invoked when received SET_PROTOCOL request
 // protocol is either HID_PROTOCOL_BOOT (0) or HID_PROTOCOL_REPORT (1)
