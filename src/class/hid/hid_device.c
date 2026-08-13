@@ -128,12 +128,12 @@ bool tud_hid_n_report(uint8_t instance, uint8_t report_id, void const* report, u
 
 uint8_t tud_hid_n_interface_protocol(uint8_t instance)
 {
-  return _hidd_itf[instance].itf_protocol;
+  return (instance < CFG_TUD_HID) ? _hidd_itf[instance].itf_protocol : 0;
 }
 
 uint8_t tud_hid_n_get_protocol(uint8_t instance)
 {
-  return _hidd_itf[instance].protocol_mode;
+  return (instance < CFG_TUD_HID) ? _hidd_itf[instance].protocol_mode : 0;
 }
 
 bool tud_hid_n_keyboard_report(uint8_t instance, uint8_t report_id, uint8_t modifier, uint8_t keycode[6])
