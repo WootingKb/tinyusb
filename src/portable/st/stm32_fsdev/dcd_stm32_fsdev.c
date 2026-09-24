@@ -184,6 +184,9 @@ static TU_ATTR_ALIGNED(4) uint32_t _setup_packet[6];
 
 static uint8_t remoteWakeCountdown; // When wake is requested
 
+// SOF enabling flag - required for SOF to not get disabled in ISR when SOF was enabled by dcd_sof_enable()
+static bool _sof_en;
+
 // into the stack.
 static void dcd_handle_bus_reset(void);
 static void dcd_transmit_packet(xfer_ctl_t * xfer, uint16_t ep_ix);
@@ -416,6 +419,22 @@ void dcd_remote_wakeup(uint8_t rhport)
 
   USB->CNTR |= (uint16_t) USB_CNTR_RESUME;
   remoteWakeCountdown = 4u; // required to be 1 to 15 ms, ESOF should trigger every 1ms.
+}
+
+void dcd_sof_enable(uint8_t rhport, bool en)
+{
+  (void) rhport;
+
+  _sof_en = en;
+
+  if (en)
+  {
+    USB->CNTR |= USB_CNTR_SOFM;
+  }
+  else
+  {
+    USB->CNTR &= ~USB_CNTR_SOFM;
+  }
 }
 
 static const tusb_desc_endpoint_t ep0OUT_desc =
@@ -651,11 +670,13 @@ void dcd_int_handler(uint8_t rhport) {
   if (int_status & USB_ISTR_SOF) {
     clear_istr_bits(USB_ISTR_SOF);
 
-    dcd_event_bus_signal(0, DCD_EVENT_SOF, true);
+    dcd_event_sof(0, USB->FNR & USB_FNR_FN, true);
 
 #if !USE_SOF
-    // Disable SOF interrupt since currently only used for remote wakeup detection
-    USB->CNTR &= ~USB_CNTR_SOFM;
+    // Disable SOF interrupt if SOF was not explicitly enabled, since it is then only used for remote wakeup detection
+    if (!_sof_en) {
+      USB->CNTR &= ~USB_CNTR_SOFM;
+    }
 #endif
   }
 

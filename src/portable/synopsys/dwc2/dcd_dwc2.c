@@ -95,6 +95,9 @@ static uint16_t ep0_pending[2];                   // Index determines direction 
 static uint16_t _allocated_fifo_words_tx;         // TX FIFO size in words (IN EPs)
 static bool     _out_ep_closed;                   // Flag to check if RX FIFO size needs an update (reduce its size)
 
+// SOF enabling flag - required for SOF to not get disabled in ISR when SOF was enabled by dcd_sof_enable()
+static bool     _sof_en;
+
 static tusb_speed_t _usb_max_speed = TUSB_SPEED_INVALID;  // Value to indicate the intended (max) USB speed
 
 // Flush the TX-FIFO and wait until we have confirmed it cleared
@@ -152,6 +155,7 @@ static void bus_reset(uint8_t rhport)
 
   tu_memclr(xfer_status, sizeof(xfer_status));
   _out_ep_closed = false;
+  _sof_en = false;
 
   // clear device address
   dwc2->dcfg &= ~DCFG_DAD_Msk;
@@ -659,6 +663,25 @@ void dcd_disconnect(uint8_t rhport)
   (void) rhport;
   dwc2_regs_t * dwc2 = DWC2_REG(rhport);
   dwc2->dctl |= DCTL_SDIS;
+}
+
+// Be advised: audio, video and possibly other iso-ep classes use dcd_sof_enable() to enable/disable its corresponding ISR on purpose!
+void dcd_sof_enable(uint8_t rhport, bool en)
+{
+  (void) rhport;
+  dwc2_regs_t * dwc2 = DWC2_REG(rhport);
+
+  _sof_en = en;
+
+  if (en)
+  {
+    dwc2->gintsts = GINTSTS_SOF;
+    dwc2->gintmsk |= GINTMSK_SOFM;
+  }
+  else
+  {
+    dwc2->gintmsk &= ~GINTMSK_SOFM;
+  }
 }
 
 
@@ -1343,12 +1366,19 @@ void dcd_int_handler(uint8_t rhport)
 
   if(int_status & GINTSTS_SOF)
   {
-    dwc2->gotgint = GINTSTS_SOF;
+    // Note: previously this wrote GOTGINT by mistake, leaving the SOF flag set
+    dwc2->gintsts = GINTSTS_SOF;
 
-    // Disable SOF interrupt since currently only used for remote wakeup detection
-    dwc2->gintmsk &= ~GINTMSK_SOFM;
+    // (micro)frame number of the SOF that was just received
+    uint32_t const frame = (dwc2->dsts & DSTS_FNSOF) >> DSTS_FNSOF_Pos;
 
-    dcd_event_bus_signal(rhport, DCD_EVENT_SOF, true);
+    // Disable SOF interrupt if SOF was not explicitly enabled, since it is then only used for remote wakeup detection
+    if (!_sof_en)
+    {
+      dwc2->gintmsk &= ~GINTMSK_SOFM;
+    }
+
+    dcd_event_sof(rhport, frame, true);
   }
 
   // RxFIFO non-empty interrupt handling.

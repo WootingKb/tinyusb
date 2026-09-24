@@ -55,6 +55,9 @@ static uint8_t *next_buffer_ptr;
 // USB_MAX_ENDPOINTS Endpoints, direction TUSB_DIR_OUT for out and TUSB_DIR_IN for in.
 static struct hw_endpoint hw_endpoints[USB_MAX_ENDPOINTS][2];
 
+// Whether the SOF interrupt was explicitly enabled via dcd_sof_enable()
+static bool _sof_en = false;
+
 static inline struct hw_endpoint *hw_endpoint_get_by_num(uint8_t num, tusb_dir_t dir)
 {
   return &hw_endpoints[num][dir];
@@ -247,6 +250,19 @@ static void dcd_rp2040_irq(void)
     uint32_t const status = usb_hw->ints;
     uint32_t handled = 0;
 
+    if (status & USB_INTS_DEV_SOF_BITS)
+    {
+        handled |= USB_INTS_DEV_SOF_BITS;
+
+        // Reading SOF_RD clears the interrupt
+        uint32_t const sof_count = usb_hw->sof_rd & USB_SOF_RD_BITS;
+
+        // Only keep the interrupt running if it was explicitly enabled
+        if (!_sof_en) usb_hw_clear->inte = USB_INTE_DEV_SOF_BITS;
+
+        dcd_event_sof(0, sof_count, true);
+    }
+
     // xfer events are handled before setup req. So if a transfer completes immediately
     // before closing the EP, the events will be delivered in same order.
     if (status & USB_INTS_BUFF_STATUS_BITS)
@@ -422,6 +438,22 @@ void dcd_connect(__unused uint8_t rhport)
 {
   (void) rhport;
   usb_hw_set->sie_ctrl = USB_SIE_CTRL_PULLUP_EN_BITS;
+}
+
+void dcd_sof_enable(uint8_t rhport, bool en)
+{
+  (void) rhport;
+
+  _sof_en = en;
+
+  if (en)
+  {
+    usb_hw_set->inte = USB_INTE_DEV_SOF_BITS;
+  }
+  else
+  {
+    usb_hw_clear->inte = USB_INTE_DEV_SOF_BITS;
+  }
 }
 
 /*------------------------------------------------------------------*/

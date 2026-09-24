@@ -79,8 +79,9 @@ typedef struct
 
   volatile uint8_t cfg_num; // current active configuration (0x00 is not configured)
   uint8_t speed;
+  volatile uint8_t sof_consumer; // bitmask of sof_consumer_t that currently need the SOF interrupt
 
-  uint8_t itf2drv[16];                      // map interface number to driver (0xff is invalid)
+  uint8_t itf2drv[16];                     // map interface number to driver (0xff is invalid)
   uint8_t ep2drv[CFG_TUD_ENDPPOINT_MAX][2]; // map endpoint to driver ( 0xff is invalid ), can use only 4-bit each
 
   tu_edpt_state_t ep_status[CFG_TUD_ENDPPOINT_MAX][2];
@@ -409,6 +410,11 @@ bool tud_connect(void)
   return true;
 }
 
+void tud_sof_cb_enable(bool en)
+{
+  usbd_sof_enable(_usbd_rhport, SOF_CONSUMER_USER, en);
+}
+
 //--------------------------------------------------------------------+
 // USBD Task
 //--------------------------------------------------------------------+
@@ -648,14 +654,8 @@ void tud_task_ext(uint32_t timeout_ms, bool in_isr)
         }
       break;
 
-      case DCD_EVENT_SOF:
-        TU_LOG2("\r\n");
-        for ( uint8_t i = 0; i < TOTAL_DRIVER_COUNT; i++ )
-        {
-          usbd_class_driver_t const * driver = get_driver(i);
-          if ( driver->sof ) driver->sof(event.rhport);
-        }
-      break;
+      // DCD_EVENT_SOF is fully handled in ISR context by dcd_event_handler()
+      // and never queued, see tud_sof_isr_cb()
 
       case USBD_EVENT_FUNC_CALL:
         TU_LOG2("\r\n");
@@ -1229,6 +1229,13 @@ void dcd_event_handler(dcd_event_t const * event, bool in_isr)
     break;
 
     case DCD_EVENT_SOF:
+      // SOF class driver handler in ISR context
+      for ( uint8_t i = 0; i < TOTAL_DRIVER_COUNT; i++ )
+      {
+        usbd_class_driver_t const * driver = get_driver(i);
+        if ( driver && driver->sof ) driver->sof(event->rhport, event->sof.frame_count);
+      }
+
       // Some MCUs after running dcd_remote_wakeup() does not have way to detect the end of remote wakeup
       // which last 1-15 ms. DCD can use SOF as a clear indicator that bus is back to operational
       if ( _usbd_dev.suspended )
@@ -1236,6 +1243,14 @@ void dcd_event_handler(dcd_event_t const * event, bool in_isr)
         _usbd_dev.suspended = 0;
         dcd_event_t const event_resume = { .rhport = event->rhport, .event_id = DCD_EVENT_RESUME };
         osal_queue_send(_usbd_q, &event_resume, in_isr);
+      }
+
+      // Application handler, also in ISR context. Deliberately not queued to
+      // tud_task(): at high speed this fires every 125us and would flood the
+      // event queue (CFG_TUD_TASK_QUEUE_SZ) whenever the main loop is busy.
+      if ( tud_sof_isr_cb && tu_bit_test(_usbd_dev.sof_consumer, SOF_CONSUMER_USER) )
+      {
+        tud_sof_isr_cb(event->sof.frame_count);
       }
     break;
 
@@ -1511,6 +1526,33 @@ void usbd_edpt_close(uint8_t rhport, uint8_t ep_addr)
   _usbd_dev.ep_status[epnum][dir].claimed = false;
 
   return;
+}
+
+void usbd_sof_enable(uint8_t rhport, sof_consumer_t consumer, bool en)
+{
+  uint8_t const consumer_old = _usbd_dev.sof_consumer;
+
+  // Keep track of which consumers need the SOF interrupt
+  if ( en )
+  {
+    _usbd_dev.sof_consumer |= (uint8_t)(1u << consumer);
+  }
+  else
+  {
+    _usbd_dev.sof_consumer &= (uint8_t)(~(1u << consumer));
+  }
+
+  if ( en )
+  {
+    // Always (re)enable: the DCD drops its SOF state on bus reset, so this must be
+    // idempotent for callers that re-enable from tud_mount_cb()
+    dcd_sof_enable(rhport, true);
+  }
+  else if ( consumer_old && !_usbd_dev.sof_consumer )
+  {
+    // Last consumer left
+    dcd_sof_enable(rhport, false);
+  }
 }
 
 host_os_t tud_guess_operation_system(void)

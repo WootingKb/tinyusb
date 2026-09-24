@@ -37,6 +37,12 @@
 // Class Driver API
 //--------------------------------------------------------------------+
 
+// Consumers of the Start-of-frame interrupt, the interrupt stays enabled while at least one consumer needs it
+typedef enum {
+  SOF_CONSUMER_USER = 0,
+  SOF_CONSUMER_AUDIO,
+} sof_consumer_t;
+
 typedef struct
 {
   #if CFG_TUSB_DEBUG >= 2
@@ -48,7 +54,7 @@ typedef struct
   uint16_t (* open             ) (uint8_t rhport, tusb_desc_interface_t const * desc_intf, uint16_t max_len);
   bool     (* control_xfer_cb  ) (uint8_t rhport, uint8_t stage, tusb_control_request_t const * request);
   bool     (* xfer_cb          ) (uint8_t rhport, uint8_t ep_addr, xfer_result_t result, uint32_t xferred_bytes);
-  void     (* sof              ) (uint8_t rhport); /* optional */
+  void     (* sof              ) (uint8_t rhport, uint32_t frame_count); // optional, invoked in ISR context
 } usbd_class_driver_t;
 
 // Invoked when initializing device stack to get additional class drivers.
@@ -101,6 +107,10 @@ bool usbd_edpt_ready(uint8_t rhport, uint8_t ep_addr)
 {
   return !usbd_edpt_busy(rhport, ep_addr) && !usbd_edpt_stalled(rhport, ep_addr);
 }
+
+// Enable/disable the SOF interrupt for a consumer. The DCD interrupt is only
+// toggled when the first consumer registers or the last one leaves.
+void usbd_sof_enable(uint8_t rhport, sof_consumer_t consumer, bool en);
 
 /*------------------------------------------------------------------*/
 /* Helper

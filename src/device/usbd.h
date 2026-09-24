@@ -97,6 +97,11 @@ bool tud_disconnect(void);
 // Return false on unsupported MCUs
 bool tud_connect(void);
 
+// Enable or disable the Start-of-frame callback (tud_sof_isr_cb). Default is
+// disabled. The stack clears this on bus reset, so typically re-enable it from
+// tud_mount_cb().
+void tud_sof_cb_enable(bool en);
+
 // Carry out Data and Status stage of control transfer
 // - If len = 0, it is equivalent to sending status only
 // - If len > wLength : it will be truncated
@@ -151,6 +156,13 @@ TU_ATTR_WEAK void tud_suspend_cb(bool remote_wakeup_en);
 
 // Invoked when usb bus is resumed
 TU_ATTR_WEAK void tud_resume_cb(void);
+
+// Invoked when a new (micro)frame started, only while enabled via
+// tud_sof_cb_enable(). Unlike upstream's tud_sof_cb() this runs in ISR
+// context and is NOT queued through tud_task(): at high speed SOF fires every
+// 125us and queueing it would flood the event queue. Keep it short.
+// frame_count is the bus (micro)frame number, or 0 on MCUs that don't expose it.
+TU_ATTR_WEAK void tud_sof_isr_cb(uint32_t frame_count);
 
 // Invoked when received control request with VENDOR TYPE
 TU_ATTR_WEAK bool tud_vendor_control_xfer_cb(uint8_t rhport, uint8_t stage, tusb_control_request_t const * request);
