@@ -1181,9 +1181,6 @@ static void handle_epout_irq (uint8_t rhport)
         epout->doepint = clear_flag;
         dcd_event_setup_received(rhport, (uint8_t*) _setup_packet, true);
       }
-
-      // Failsafe, clear all pending interrupts if set
-      epout[n].doepint = epout[n].doepint;
     }
   }
 }
@@ -1261,9 +1258,6 @@ static void handle_epin_irq (uint8_t rhport)
           dwc2->diepempmsk &= ~(1 << n);
         }
       }
-
-      // Failsafe, clear all pending interrupts if set
-      epin[n].diepint = epin[n].diepint;
     }
   }
 }
@@ -1343,7 +1337,7 @@ void dcd_int_handler(uint8_t rhport)
 
   if(int_status & GINTSTS_SOF)
   {
-    dwc2->gotgint = GINTSTS_SOF;
+    dwc2->gintsts = GINTSTS_SOF;
 
     // Disable SOF interrupt since currently only used for remote wakeup detection
     dwc2->gintmsk &= ~GINTMSK_SOFM;
