@@ -1183,7 +1183,7 @@ static void handle_epout_irq (uint8_t rhport)
       }
 
       // Failsafe, clear all pending interrupts if set
-      epout[n].doepint = epout[n].doepint;
+      epout->doepint = epout->doepint;
     }
   }
 }
@@ -1343,7 +1343,7 @@ void dcd_int_handler(uint8_t rhport)
 
   if(int_status & GINTSTS_SOF)
   {
-    dwc2->gotgint = GINTSTS_SOF;
+    dwc2->gintmsk = GINTSTS_SOF;
 
     // Disable SOF interrupt since currently only used for remote wakeup detection
     dwc2->gintmsk &= ~GINTMSK_SOFM;
